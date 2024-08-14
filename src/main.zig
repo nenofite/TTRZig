@@ -50,11 +50,30 @@ fn deinit() void {
 
 const MainScreen = struct {
     arena: SpriteArena,
+    foo: ?*p.LCDSprite = null,
 
     pub fn init() !MainScreen {
-        return .{
+        var self = MainScreen{
             .arena = try SpriteArena.init(p.allocator),
         };
+        errdefer self.arena.deinit();
+        try self.start();
+        return self;
+    }
+
+    pub fn start(self: *MainScreen) !void {
+        const sprite = try self.arena.newSprite();
+        self.foo = sprite;
+
+        const heart = p.playdate.graphics.getTableBitmap(images.heartsTable, 0) orelse @panic("Couldn't get hearts@0");
+        p.playdate.sprite.setImage(sprite, heart, .BitmapUnflipped);
+        p.playdate.sprite.moveTo(sprite, 20, 20);
+        p.playdate.sprite.addSprite(sprite);
+    }
+
+    pub fn update(self: *MainScreen) !void {
+        const foo = self.foo orelse return error.NotInit;
+        p.playdate.sprite.moveBy(foo, 3, 0);
     }
 
     pub fn deinit(self: *MainScreen) void {
@@ -75,8 +94,10 @@ const TopState = union(enum) {
         }
     }
 
-    pub fn update(self: *TopState) void {
-        _ = self;
+    pub fn update(self: *TopState) !void {
+        switch (self.*) {
+            .main => |*main| try main.update(),
+        }
     }
 };
 
@@ -84,7 +105,11 @@ var state: *TopState = undefined;
 
 fn update_and_render(userdata: ?*anyopaque) callconv(.C) c_int {
     _ = userdata;
-    state.update();
+    state.update() catch |err| {
+        var buf = [1]u8{0} ** 1024;
+        const result = std.fmt.bufPrintZ(&buf, "Failed update: {any}", .{err}) catch "oop";
+        p.softFail(result);
+    };
 
     //returning 1 signals to the OS to draw the frame.
     //we always want this frame drawn
