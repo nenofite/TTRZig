@@ -26,10 +26,11 @@ pub fn init_playdate(pd: *pdapi.PlaydateAPI) void {
 pub const WIDTH = 400;
 pub const HEIGHT = 240;
 
-pub fn softFail() void {
-    if (builtin.mode == .Debug) {
-        @panic("soft failure");
-    }
+pub fn softFail(msg: [:0]const u8) void {
+    playdate.system.@"error"(msg);
+    // if (builtin.mode == .Debug) {
+    //     @panic(msg);
+    // }
 }
 
 pub fn loadFont(path: [:0]const u8) *pdapi.LCDFont {
@@ -117,3 +118,41 @@ pub const ButtonTracker = struct {
         self.state = .init;
     }
 };
+
+const alloc_impl = struct {
+    fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
+        _ = ctx;
+        _ = ptr_align;
+        _ = ret_addr;
+        const raw = playdate.system.realloc(null, len) orelse return null;
+        const u8raw: [*]u8 = @ptrCast(@alignCast(raw));
+        return u8raw;
+    }
+
+    fn resize(ctx: *anyopaque, buf: []u8, buf_align: u8, new_len: usize, ret_addr: usize) bool {
+        _ = ctx;
+        _ = buf_align;
+        _ = ret_addr;
+        const new_ptr = playdate.system.realloc(buf.ptr, new_len) orelse return false;
+        std.debug.assert(@intFromPtr(new_ptr) == @intFromPtr(buf.ptr));
+        return true;
+    }
+
+    fn free(ctx: *anyopaque, buf: []u8, buf_align: u8, ret_addr: usize) void {
+        _ = ctx;
+        _ = buf_align;
+        _ = ret_addr;
+        _ = playdate.system.realloc(buf.ptr, 0);
+    }
+
+    pub const allocator: std.mem.Allocator = .{
+        .ptr = undefined,
+        .vtable = &.{
+            .alloc = alloc,
+            .resize = resize,
+            .free = free,
+        },
+    };
+};
+
+pub const allocator = alloc_impl.allocator;
