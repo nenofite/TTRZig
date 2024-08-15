@@ -24,15 +24,15 @@ pub fn main() !void {
     const rawFile = try inputFile.readToEndAlloc(alloc, 1024 * 1024 * 1024);
     defer alloc.free(rawFile);
 
-    const ct = loadLevel(alloc, rawFile);
-    const result = try std.fmt.allocPrint(alloc, "count is: {any}\nchao\n", .{ct});
+    const result = try loadLevel(alloc, rawFile);
+    // const result = try std.fmt.allocPrint(alloc, "count is: {any}\nchao\n", .{ct});
     defer alloc.free(result);
 
     try outputFile.writeAll(result);
     _ = try std.io.getStdOut().write("Completed write!\n");
 }
 
-fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) i32 {
+fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     var arena = std.heap.ArenaAllocator.init(parentAlloc);
     defer arena.deinit();
     const alloc = arena.allocator();
@@ -47,12 +47,29 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) i32 {
     } else {
         @panic("Could not find Level_0");
     };
-    var layerCount: i32 = 0;
-    if (level.layerInstances) |layers| {
-        for (layers) |_| {
-            layerCount += 1;
+
+    const mainLayer: *ldtk.LayerInstance = forLayer: {
+        if (level.layerInstances) |layers| {
+            for (layers) |*l| {
+                if (std.mem.eql(u8, l.__identifier, "AutoLayer")) {
+                    break :forLayer l;
+                }
+            }
         }
+        @panic("Could not find AutoLayer");
+    };
+
+    var resultArr: std.ArrayList(u8) = std.ArrayList(u8).init(parentAlloc);
+    errdefer resultArr.deinit();
+    const resultWriter = resultArr.writer();
+
+    for (mainLayer.autoLayerTiles) |tile| {
+        const x = tile.px[0];
+        const y = tile.px[1];
+        try resultWriter.print("{any} {any}\n", .{ x, y });
     }
 
-    return layerCount;
+    try resultWriter.print("Done!\n", .{});
+
+    return try resultArr.toOwnedSlice();
 }
