@@ -6,7 +6,6 @@ const pat = @import("pattern.zig");
 const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
-const ldtk = @import("LDtk.zig");
 
 const SpriteArena = @import("sprite_arena.zig").SpriteArena;
 
@@ -90,26 +89,35 @@ const MainScreen = struct {
         const alloc = arena.allocator();
         p.log("Loading file", .{});
         p.log("Arena size: {any}", .{arena.queryCapacity()});
-        const rawFile = loadWholeFile(alloc, "levels.ldtk") catch @panic("Couldn't load levels.ldtk");
+        const rawFile = loadWholeFile(alloc, "minlevels.txt") catch @panic("Couldn't load minlevels.txt");
         defer alloc.free(rawFile);
         p.log("Parsing file", .{});
         p.log("Arena size: {any}", .{arena.queryCapacity()});
-        var root = ldtk.parse(alloc, rawFile) catch @panic("Couldn't parse levels.ldtk");
-        defer root.deinit();
 
-        p.log("Iterating level", .{});
-        p.log("Arena size: {any}", .{arena.queryCapacity()});
-        const level: *ldtk.Level = forLevel: for (root.root.levels) |*l| {
-            if (std.mem.eql(u8, l.identifier, "Level_0")) {
-                break :forLevel l;
-            }
-        } else {
-            @panic("Could not find Level_0");
+        var parser = std.fmt.Parser{
+            .buf = rawFile,
+            .iter = .{ .bytes = rawFile, .i = 0 },
         };
-        if (level.layerInstances) |layers| {
-            for (layers) |layer| {
-                p.log("layer: {s}", .{layer.__identifier});
+        parseLines: while (true) {
+            _ = parser.maybe('\n');
+            if (parser.number()) |x| {
+                if (parser.maybe(' ')) {
+                    if (parser.number()) |y| {
+                        if (parser.maybe(' ')) {
+                            if (parser.char()) |wallToken| {
+                                const isWall = wallToken == 'W';
+                                if (parser.maybe(' ')) {
+                                    if (parser.number()) |id| {
+                                        p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
+                                        continue :parseLines;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
+            break :parseLines;
         }
     }
 };
