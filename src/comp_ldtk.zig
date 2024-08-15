@@ -63,13 +63,35 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     errdefer resultArr.deinit();
     const resultWriter = resultArr.writer();
 
+    const wallIds = extractWallTileIDs(&root.root);
+
     for (mainLayer.autoLayerTiles) |tile| {
         const x = tile.px[0];
         const y = tile.px[1];
-        try resultWriter.print("{any} {any}\n", .{ x, y });
+        const isWall = std.mem.indexOfScalar(i64, wallIds, tile.t) != null;
+
+        try resultWriter.print("{any} {any} [{any}] : {any}\n", .{ x, y, tile.t, isWall });
     }
 
     try resultWriter.print("Done!\n", .{});
 
     return try resultArr.toOwnedSlice();
+}
+
+fn extractWallTileIDs(root: *const ldtk.Root) []const i64 {
+    for (root.defs.?.tilesets) |tileset| {
+        if (!std.mem.eql(u8, tileset.identifier, "Dungeon_inv_8_8")) {
+            continue;
+        }
+
+        for (tileset.enumTags) |enumTag| {
+            if (!std.mem.eql(u8, enumTag.enumValueId, "Wall")) {
+                continue;
+            }
+
+            return enumTag.tileIds;
+        }
+    }
+
+    @panic("Did not find wall tile IDs");
 }

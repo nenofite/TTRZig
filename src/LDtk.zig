@@ -67,7 +67,7 @@ pub const Root = struct {
         const ldtk_levels = try Level.fromJSONMany(alloc, root.get("levels"));
         var ldtk_root = Root{
             .bgColor = string(root.get("bgColor")) orelse return error.InvalidBGColor,
-            // .defs = ldtk_defs,
+            .defs = try Definitions.fromJSON(alloc, root.get("defs")),
             .externalLevels = boolean(root.get("externalLevels")) orelse return error.InvalidExternalLevels,
             .jsonVersion = string(root.get("jsonVersion")) orelse return error.InvalidJsonVersion,
             .levels = ldtk_levels,
@@ -492,14 +492,14 @@ const FiledInstanceGridPoint = struct {
 /// 3. Definitions
 /// Only 2 definitions you might need here are Tilesets and Enums
 const Definitions = struct {
-    entities: []EntityDefinition,
+    // entities: []EntityDefinition,
 
-    enums: []EnumDefinition,
-    /// Same as enums, excepts they have a relPath to point to an external source file
-    externalEnums: []EnumDefinition,
-    layers: []LayerDefinition,
-    /// All custom fields available to all levels
-    levelFields: []FieldDefinition,
+    // enums: []EnumDefinition,
+    // /// Same as enums, excepts they have a relPath to point to an external source file
+    // externalEnums: []EnumDefinition,
+    // layers: []LayerDefinition,
+    // /// All custom fields available to all levels
+    // levelFields: []FieldDefinition,
     /// All tilesets
     tilesets: []TilesetDefinition,
 
@@ -507,6 +507,12 @@ const Definitions = struct {
         _ = defs;
         _ = alloc;
         // TODO
+    }
+
+    pub fn fromJSON(alloc: std.mem.Allocator, defs_opt: ?std.json.Value) !?Definitions {
+        const defs = defs_opt orelse return null;
+        const p = try std.json.parseFromValue(Definitions, alloc, defs, .{ .ignore_unknown_fields = true });
+        return p.value;
     }
 };
 
