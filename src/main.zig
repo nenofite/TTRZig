@@ -110,8 +110,8 @@ fn update_and_render(userdata: ?*anyopaque) callconv(.C) c_int {
         const result = std.fmt.bufPrintZ(&buf, "Failed update: {any}", .{err}) catch "oop";
         p.softFail(result);
     };
+    p.playdate.sprite.updateAndDrawSprites();
 
-    //returning 1 signals to the OS to draw the frame.
-    //we always want this frame drawn
-    return 1;
+    // returning 1 signals to the OS to draw the frame.
+    return 0;
 }
