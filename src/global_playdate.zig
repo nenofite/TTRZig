@@ -7,7 +7,7 @@ pub var playdate: *pdapi.PlaydateAPI = undefined;
 var randomStorage: std.Random.Pcg = undefined;
 pub var random: std.Random = undefined;
 
-pub var locoMotion: *pdapi.LCDFont = undefined;
+pub var geo: *pdapi.LCDFont = undefined;
 pub var mans: *pdapi.LCDFont = undefined;
 
 pub fn init_playdate(pd: *pdapi.PlaydateAPI) void {
@@ -18,8 +18,8 @@ pub fn init_playdate(pd: *pdapi.PlaydateAPI) void {
     const seed: u64 = @as(u64, @intCast(sec)) << 32 | @as(u32, @intCast(msec));
     randomStorage = std.Random.Pcg.init(seed);
     random = randomStorage.random();
-    locoMotion = loadFont("fonts/locomotion");
-    playdate.graphics.setFont(locoMotion);
+    geo = loadFont("fonts/geo");
+    playdate.graphics.setFont(geo);
     mans = loadFont("fonts/mans");
 }
 
