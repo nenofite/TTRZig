@@ -119,6 +119,12 @@ pub const ButtonTracker = struct {
     }
 };
 
+pub fn log(comptime fmt: []const u8, args: anytype) void {
+    var buf = [1]u8{0} ** 1024;
+    const fmtBuf = std.fmt.bufPrintZ(&buf, fmt, args) catch "(Format failed)";
+    playdate.system.logToConsole("%s", fmtBuf.ptr);
+}
+
 const alloc_impl = struct {
     fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
         _ = ctx;
@@ -133,9 +139,15 @@ const alloc_impl = struct {
         _ = ctx;
         _ = buf_align;
         _ = ret_addr;
-        const new_ptr = playdate.system.realloc(buf.ptr, new_len) orelse return false;
-        std.debug.assert(@intFromPtr(new_ptr) == @intFromPtr(buf.ptr));
-        return true;
+
+        _ = buf;
+        _ = new_len;
+        return false;
+
+        // const new_ptr = playdate.system.realloc(buf.ptr, new_len) orelse return false;
+        // log("realloc: {any} vs {any}", .{ buf.ptr, new_ptr });
+        // // std.debug.assert(@intFromPtr(new_ptr) == @intFromPtr(buf.ptr));
+        // return true;
     }
 
     fn free(ctx: *anyopaque, buf: []u8, buf_align: u8, ret_addr: usize) void {

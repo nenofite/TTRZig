@@ -88,21 +88,21 @@ const MainScreen = struct {
         defer arena.deinit();
 
         const alloc = arena.allocator();
-        const rawFile = loadWholeFile(alloc, "world.ldtk") catch @panic("Couldn't load world.ldtk");
+        const rawFile = loadWholeFile(alloc, "levels.ldtk") catch @panic("Couldn't load levels.ldtk");
         defer alloc.free(rawFile);
-        var root = ldtk.parse(alloc, rawFile) catch @panic("Couldn't parse world.ldtk");
+        var root = ldtk.parse(alloc, rawFile) catch @panic("Couldn't parse levels.ldtk");
         defer root.deinit();
 
         const level: *ldtk.Level = forLevel: for (root.root.levels) |*l| {
-            if (std.mem.eql(u8, l.identifier, "Level-1")) {
+            if (std.mem.eql(u8, l.identifier, "Level_0")) {
                 break :forLevel l;
             }
         } else {
-            @panic("Could not find Level-1");
+            @panic("Could not find Level_0");
         };
         if (level.layerInstances) |layers| {
             for (layers) |layer| {
-                p.playdate.system.logToConsole("%s\n", layer.__identifier.ptr);
+                p.log("layer: {s}", .{layer.__identifier});
             }
         }
     }
