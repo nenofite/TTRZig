@@ -113,5 +113,5 @@ fn update_and_render(userdata: ?*anyopaque) callconv(.C) c_int {
     p.playdate.sprite.updateAndDrawSprites();
 
     // returning 1 signals to the OS to draw the frame.
-    return 0;
+    return 1;
 }
