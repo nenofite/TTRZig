@@ -6,9 +6,21 @@ pub fn build(b: *std.Build) !void {
     const pdx_file_name = name ++ ".pdx";
     const optimize = b.standardOptimizeOption(.{});
 
+    const comp_ldtk = b.addExecutable(.{
+        .name = "comp_ldtk",
+        .root_source_file = b.path("src/comp_ldtk.zig"),
+        .target = b.graph.host,
+    });
+
+    const comp_ldtk_step = b.addRunArtifact(comp_ldtk);
+    comp_ldtk_step.addFileArg(b.path("src/levels.ldtk"));
+    const minlevels = comp_ldtk_step.addOutputFileArg("minlevels.txt");
+
     const writer = b.addWriteFiles();
     const source_dir = writer.getDirectory();
     writer.step.name = "write source directory";
+
+    _ = writer.addCopyFile(minlevels, "minlevels.txt");
 
     const lib = b.addSharedLibrary(.{
         .name = "pdex",
