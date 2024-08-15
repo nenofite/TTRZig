@@ -50,7 +50,7 @@ fn deinit() void {
 
 const MainScreen = struct {
     arena: SpriteArena,
-    foo: ?*p.LCDSprite = null,
+    blimp: ?*p.LCDSprite = null,
 
     pub fn init() !MainScreen {
         var self = MainScreen{
@@ -63,16 +63,16 @@ const MainScreen = struct {
 
     pub fn start(self: *MainScreen) !void {
         const sprite = try self.arena.newSprite();
-        self.foo = sprite;
+        self.blimp = sprite;
 
-        const heart = p.playdate.graphics.getTableBitmap(images.heartsTable, 0) orelse @panic("Couldn't get hearts@0");
-        p.playdate.sprite.setImage(sprite, heart, .BitmapUnflipped);
+        const image = p.playdate.graphics.getTableBitmap(images.spritesTable, 0) orelse @panic("Couldn't get sprites@0");
+        p.playdate.sprite.setImage(sprite, image, .BitmapUnflipped);
         p.playdate.sprite.moveTo(sprite, 20, 20);
         p.playdate.sprite.addSprite(sprite);
     }
 
     pub fn update(self: *MainScreen) !void {
-        const foo = self.foo orelse return error.NotInit;
+        const foo = self.blimp orelse return error.NotInit;
         p.playdate.sprite.moveBy(foo, 3, 0);
     }
 
