@@ -69,8 +69,9 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
         const x = tile.px[0];
         const y = tile.px[1];
         const isWall = std.mem.indexOfScalar(i64, wallIds, tile.t) != null;
+        const wallToken = if (isWall) "W" else "_";
 
-        try resultWriter.print("{any} {any} [{any}] : {any}\n", .{ x, y, tile.t, isWall });
+        try resultWriter.print("{any} {any} {s} {any}\n", .{ x, y, wallToken, tile.t });
     }
 
     try resultWriter.print("Done!\n", .{});
