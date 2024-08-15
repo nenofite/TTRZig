@@ -29,7 +29,7 @@ pub fn main() !void {
     defer alloc.free(result);
 
     try outputFile.writeAll(result);
-    std.debug.print("Completed write!", .{});
+    _ = try std.io.getStdOut().write("Completed write!\n");
 }
 
 fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) i32 {
