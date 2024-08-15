@@ -88,11 +88,17 @@ const MainScreen = struct {
         defer arena.deinit();
 
         const alloc = arena.allocator();
+        p.log("Loading file", .{});
+        p.log("Arena size: {any}", .{arena.queryCapacity()});
         const rawFile = loadWholeFile(alloc, "levels.ldtk") catch @panic("Couldn't load levels.ldtk");
         defer alloc.free(rawFile);
+        p.log("Parsing file", .{});
+        p.log("Arena size: {any}", .{arena.queryCapacity()});
         var root = ldtk.parse(alloc, rawFile) catch @panic("Couldn't parse levels.ldtk");
         defer root.deinit();
 
+        p.log("Iterating level", .{});
+        p.log("Arena size: {any}", .{arena.queryCapacity()});
         const level: *ldtk.Level = forLevel: for (root.root.levels) |*l| {
             if (std.mem.eql(u8, l.identifier, "Level_0")) {
                 break :forLevel l;
