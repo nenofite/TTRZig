@@ -6,6 +6,7 @@ const pat = @import("pattern.zig");
 const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
+const ldtk = @import("LDtk.zig");
 
 const SpriteArena = @import("sprite_arena.zig").SpriteArena;
 
@@ -69,6 +70,8 @@ const MainScreen = struct {
         p.playdate.sprite.setImage(sprite, image, .BitmapUnflipped);
         p.playdate.sprite.moveTo(sprite, 20, 20);
         p.playdate.sprite.addSprite(sprite);
+
+        self.loadLevel();
     }
 
     pub fn update(self: *MainScreen) !void {
@@ -79,7 +82,41 @@ const MainScreen = struct {
     pub fn deinit(self: *MainScreen) void {
         self.arena.deinit();
     }
+
+    fn loadLevel(self: *MainScreen) void {
+        var arena = std.heap.ArenaAllocator.init(self.arena.alloc);
+        defer arena.deinit();
+
+        const alloc = arena.allocator();
+        const rawFile = loadWholeFile(alloc, "world.ldtk") catch @panic("Couldn't load world.ldtk");
+        defer alloc.free(rawFile);
+        var root = ldtk.parse(alloc, rawFile) catch @panic("Couldn't parse world.ldtk");
+        defer root.deinit();
+
+        const level: *ldtk.Level = forLevel: for (root.root.levels) |*l| {
+            if (std.mem.eql(u8, l.identifier, "Level-1")) {
+                break :forLevel l;
+            }
+        } else {
+            @panic("Could not find Level-1");
+        };
+        if (level.layerInstances) |layers| {
+            for (layers) |layer| {
+                p.playdate.system.logToConsole("%s\n", layer.__identifier.ptr);
+            }
+        }
+    }
 };
+
+fn loadWholeFile(alloc: std.mem.Allocator, path: [*c]const u8) ![]u8 {
+    const file = p.playdate.file.open(path, p.FILE_READ) orelse return error.FileNotFound;
+    defer _ = p.playdate.file.close(file);
+    const buf = try alloc.alloc(u8, 1024 * 1024);
+    errdefer alloc.free(buf);
+    const actualLen = p.playdate.file.read(file, buf.ptr, @intCast(buf.len));
+    if (actualLen <= 0) return error.FileEmpty;
+    return buf[0..@intCast(actualLen)];
+}
 
 const TopState = union(enum) {
     main: MainScreen,

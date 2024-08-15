@@ -25,23 +25,29 @@ const std = @import("std");
 
 alloc: std.mem.Allocator,
 root: Root,
-parser: std.json.Parser,
-value_tree: std.json.ValueTree,
+// parser: std.json.Parser,
+value_tree: std.json.Parsed(std.json.Value),
 
 pub fn parse(alloc: std.mem.Allocator, ldtk_file: []const u8) !@This() {
     var this: @This() = undefined;
     this.alloc = alloc;
     //this.parser = std.json.Parser.init(alloc, false);
-    this.parser = std.json.Parser.init(alloc, .alloc_if_needed);
-    this.value_tree = try this.parser.parse(ldtk_file);
-    this.root = try Root.fromJSON(alloc, this.value_tree.root);
+    // this.parser = std.json.Parser.init(alloc, .alloc_if_needed);
+    this.value_tree = try std.json.parseFromSlice(
+        std.json.Value,
+        alloc,
+        ldtk_file,
+        .{ .allocate = .alloc_if_needed },
+    );
+    // this.value_tree = try this.parser.parse(ldtk_file);
+    this.root = try Root.fromJSON(alloc, this.value_tree.value);
     return this;
 }
 
 pub fn deinit(this: *@This()) void {
     this.root.deinit(this.alloc);
     this.value_tree.deinit();
-    this.parser.deinit();
+    // this.parser.deinit();
 }
 
 /// 1. LDtk Json root
@@ -245,7 +251,7 @@ pub const LayerInstance = struct {
     pub fn fromJSON(alloc: std.mem.Allocator, layer_value: std.json.Value) !LayerInstance {
         const layer_obj = object(layer_value) orelse return error.InvalidLayer;
         const __type = enum_from_value(LayerType, layer_obj.get("__type")) orelse return error.InvalidType;
-        var grid = grid: {
+        const grid = grid: {
             if (__type == .IntGrid) {
                 if (array(layer_obj.get("intGridCsv"))) |intGridCsv| {
                     var grid_list = try std.ArrayList(i64).initCapacity(alloc, intGridCsv.items.len);
@@ -330,7 +336,7 @@ const TileInstance = struct {
 
     pub fn fromJSON(tile_opt: ?std.json.Value) !TileInstance {
         const tile = object(tile_opt) orelse return error.InvalidTileInstance;
-        const f = @intToEnum(FlipBits, integer(tile.get("f")) orelse return error.InvalidFlipBits);
+        const f: FlipBits = @enumFromInt(integer(tile.get("f")) orelse return error.InvalidFlipBits);
         const px = pos_from_value(tile.get("px")) orelse return error.InvalidPx;
         const src = pos_from_value(tile.get("src")) orelse return error.InvalidSrc;
         const t = integer(tile.get("t")) orelse return error.InvalidT;
@@ -683,7 +689,7 @@ fn float(value_opt: ?std.json.Value) ?f64 {
     return switch (value) {
         .float => |a_float| a_float,
         // Integers are valid floats
-        .integer => |int| @intToFloat(f64, int),
+        .integer => |int| @floatFromInt(int),
         else => null,
     };
 }
