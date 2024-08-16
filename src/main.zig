@@ -69,6 +69,11 @@ const BlimpDynamics = struct {
 
         self.x += self.velX;
         self.y += self.velY;
+
+        const crankChange = p.playdate.system.getCrankChange();
+        const ballastChange: i32 = @intFromFloat(crankChange / 360 * @as(f32, @floatFromInt(neutralBallast)));
+        self.ballast +|= ballastChange;
+        self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
     }
 };
 
