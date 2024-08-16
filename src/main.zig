@@ -85,6 +85,12 @@ const BlimpDynamics = struct {
     }
 };
 
+fn alwaysSlide(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
+    _ = self;
+    _ = other;
+    return .CollisionTypeSlide;
+}
+
 const MainScreen = struct {
     arena: SpriteArena,
     blimp: ?*p.LCDSprite = null,
@@ -115,6 +121,7 @@ const MainScreen = struct {
         p.playdate.sprite.setImage(blimp, image, .BitmapUnflipped);
         p.playdate.sprite.setCollideRect(blimp, .{ .x = 0, .y = 0, .width = 32, .height = 32 });
         p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
+        p.playdate.sprite.setCollisionResponseFunction(blimp, alwaysSlide);
         p.playdate.sprite.addSprite(blimp);
         self.blimpState = .{ .x = spawnX, .y = spawnY };
     }
