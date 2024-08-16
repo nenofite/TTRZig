@@ -58,15 +58,35 @@ pub const Dpad = enum {
     left,
 };
 
+pub const Buttons = packed struct(c_int) {
+    left: bool = false,
+    right: bool = false,
+    up: bool = false,
+    down: bool = false,
+    b: bool = false,
+    a: bool = false,
+    _extra: u26 = undefined,
+};
+// pub const BUTTON_LEFT = (1 << 0);
+// pub const BUTTON_RIGHT = (1 << 1);
+// pub const BUTTON_UP = (1 << 2);
+// pub const BUTTON_DOWN = (1 << 3);
+// pub const BUTTON_B = (1 << 4);
+// pub const BUTTON_A = (1 << 5);
+
 pub const ButtonState = struct {
-    current: pdapi.PDButtons = 0,
-    pushed: pdapi.PDButtons = 0,
-    released: pdapi.PDButtons = 0,
+    current: Buttons = .{},
+    pushed: Buttons = .{},
+    released: Buttons = .{},
 };
 
 pub fn getButtonState() ButtonState {
     var result = ButtonState{};
-    playdate.system.getButtonState(&result.current, &result.pushed, &result.released);
+    playdate.system.getButtonState(
+        @ptrCast(&result.current),
+        @ptrCast(&result.pushed),
+        @ptrCast(&result.released),
+    );
     return result;
 }
 

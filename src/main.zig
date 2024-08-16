@@ -60,8 +60,21 @@ const BlimpDynamics = struct {
     ballast: i32 = neutralBallast,
 
     pub fn update(self: *BlimpDynamics) void {
-        self.velX *= 0.99;
-        self.velY *= 0.99;
+        self.velX *= 0.9;
+        self.velY *= 0.9;
+
+        const crankChange = p.playdate.system.getCrankChange();
+        const ballastChange: i32 = @intFromFloat(crankChange / 360 * @as(f32, @floatFromInt(neutralBallast)));
+        self.ballast +|= ballastChange;
+        self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
+
+        const btns = p.getButtonState();
+        if (btns.current.left) {
+            self.velX = -1;
+        } else if (btns.current.right) {
+            self.velX = 1;
+        }
+
         const diff = neutralBallast - self.ballast;
         const unclampedRatio = @as(f32, @floatFromInt(diff)) / @as(f32, @floatFromInt(neutralBallast));
         const ratio = std.math.clamp(unclampedRatio, -1, 1);
@@ -69,11 +82,6 @@ const BlimpDynamics = struct {
 
         self.x += self.velX;
         self.y += self.velY;
-
-        const crankChange = p.playdate.system.getCrankChange();
-        const ballastChange: i32 = @intFromFloat(crankChange / 360 * @as(f32, @floatFromInt(neutralBallast)));
-        self.ballast +|= ballastChange;
-        self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
     }
 };
 
