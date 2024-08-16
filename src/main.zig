@@ -64,20 +64,27 @@ const MainScreen = struct {
     }
 
     pub fn start(self: *MainScreen) !void {
-        const sprite = try self.arena.newSprite();
-        self.blimp = sprite;
+        const blimp = try self.arena.newSprite();
+        errdefer self.arena.freeSprite(blimp);
+        self.blimp = blimp;
 
         const image = p.playdate.graphics.getTableBitmap(images.spritesTable, 0) orelse @panic("Couldn't get sprites@0");
-        p.playdate.sprite.setImage(sprite, image, .BitmapUnflipped);
-        p.playdate.sprite.moveTo(sprite, 20, 20);
-        p.playdate.sprite.addSprite(sprite);
+        p.playdate.sprite.setImage(blimp, image, .BitmapUnflipped);
+        p.playdate.sprite.setCollideRect(blimp, .{ .x = 0, .y = 0, .width = 32, .height = 32 });
+        p.playdate.sprite.moveTo(blimp, 50, 90);
+        p.playdate.sprite.addSprite(blimp);
 
-        _ = try self.loadLevel();
+        const level = try self.loadLevel();
+        errdefer self.arena.freeSprite(level);
     }
 
     pub fn update(self: *MainScreen) !void {
-        const foo = self.blimp orelse return error.NotInit;
-        p.playdate.sprite.moveBy(foo, 3, 0);
+        const blimp = self.blimp.?;
+        var x: f32 = 0;
+        var y: f32 = 0;
+        p.playdate.sprite.getPosition(blimp, &x, &y);
+        const collisions = p.playdate.sprite.moveWithCollisions(blimp, x + 3, y, null, null, null);
+        if (collisions != null) _ = p.playdate.system.realloc(collisions, 0);
     }
 
     pub fn deinit(self: *MainScreen) void {
