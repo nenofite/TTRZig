@@ -70,7 +70,7 @@ const MainScreen = struct {
         p.playdate.sprite.moveTo(sprite, 20, 20);
         p.playdate.sprite.addSprite(sprite);
 
-        try self.loadLevel();
+        _ = try self.loadLevel();
     }
 
     pub fn update(self: *MainScreen) !void {
@@ -82,50 +82,63 @@ const MainScreen = struct {
         self.arena.deinit();
     }
 
-    fn loadLevel(self: *MainScreen) !void {
-        // var arena = std.heap.ArenaAllocator.init(self.arena.alloc);
-        // defer arena.deinit();
-
+    fn loadLevel(self: *MainScreen) !*p.LCDSprite {
         const alloc = self.arena.alloc;
         p.log("Loading file", .{});
-        // p.log("Arena size: {any}", .{arena.queryCapacity()});
         const rawFile = loadWholeFile(alloc, "minlevels.txt") catch @panic("Couldn't load minlevels.txt");
         defer alloc.free(rawFile);
         p.log("File size: {any}", .{rawFile.len});
-        p.log("Parsing file", .{});
-        // p.log("Arena size: {any}", .{arena.queryCapacity()});
 
-        var tileCount: u32 = 0;
-        var parser = Parser.init(rawFile);
-        defer parser.deinit();
-        parseLines: while (true) {
-            _ = parser.maybe('\n');
-            const x = parser.number(i32) orelse break :parseLines;
-            if (!parser.maybe(' ')) break :parseLines;
-            const y = parser.number(i32) orelse break :parseLines;
-            if (!parser.maybe(' ')) break :parseLines;
-            const wallToken = parser.char() orelse break :parseLines;
-            const isWall = wallToken == 'W';
-            if (!parser.maybe(' ')) break :parseLines;
-            const id = parser.number(i32) orelse break :parseLines;
-            _ = try self.addTile(x, y, id, isWall);
-            tileCount += 1;
-            // p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
+        const levelImg = p.playdate.graphics.newBitmap(p.WIDTH, p.HEIGHT, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse @panic("Can't make level bitmap");
+        errdefer p.playdate.graphics.freeBitmap(levelImg);
+
+        const levelSprite = try self.arena.newSprite();
+        errdefer self.arena.freeSprite(levelSprite);
+
+        // Draw bitmap
+        {
+            p.playdate.graphics.pushContext(levelImg);
+            defer p.playdate.graphics.popContext();
+            defer p.log("Finished drawing level", .{});
+            p.playdate.graphics.setDrawMode(.DrawModeCopy);
+
+            p.log("Parsing file", .{});
+
+            var tileCount: u32 = 0;
+            var parser = Parser.init(rawFile);
+            defer parser.deinit();
+            parseLines: while (true) {
+                _ = parser.maybe('\n');
+                const x = parser.number(i32) orelse break :parseLines;
+                if (!parser.maybe(' ')) break :parseLines;
+                const y = parser.number(i32) orelse break :parseLines;
+                if (!parser.maybe(' ')) break :parseLines;
+                const wallToken = parser.char() orelse break :parseLines;
+                const isWall = wallToken == 'W';
+                if (!parser.maybe(' ')) break :parseLines;
+                const id = parser.number(i32) orelse break :parseLines;
+                _ = try self.addTile(x, y, id, isWall);
+                tileCount += 1;
+            }
+            p.log("Found {any} tiles", .{tileCount});
         }
-        p.log("Found {any} tiles", .{tileCount});
+
+        p.log("Making it into a sprite", .{});
+        p.playdate.sprite.setImage(levelSprite, levelImg, .BitmapUnflipped);
+        p.playdate.sprite.setCenter(levelSprite, 0, 0);
+        p.playdate.sprite.setZIndex(levelSprite, -1);
+        p.playdate.sprite.addSprite(levelSprite);
+
+        return levelSprite;
     }
 
-    fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, isWall: bool) !*p.LCDSprite {
-        const sprite = try self.arena.newSprite();
-        errdefer self.arena.freeSprite(sprite);
+    fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, isWall: bool) !void {
+        _ = self;
         const tileImg = p.playdate.graphics.getTableBitmap(images.dungeonTable, tileId) orelse return error.UnknownTile;
-        p.playdate.sprite.setImage(sprite, tileImg, .BitmapUnflipped);
         if (isWall) {
             // TODO collision
         }
-        p.playdate.sprite.moveTo(sprite, @floatFromInt(x), @floatFromInt(y));
-        p.playdate.sprite.addSprite(sprite);
-        return sprite;
+        p.playdate.graphics.drawBitmap(tileImg, x, y, .BitmapUnflipped);
     }
 };
 
