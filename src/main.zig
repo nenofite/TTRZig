@@ -133,12 +133,33 @@ const MainScreen = struct {
     }
 
     fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, isWall: bool) !void {
-        _ = self;
         const tileImg = p.playdate.graphics.getTableBitmap(images.dungeonTable, tileId) orelse return error.UnknownTile;
         if (isWall) {
-            // TODO collision
+            _ = try self.addEmptyCollisionSprite(.{
+                .x = @floatFromInt(x),
+                .y = @floatFromInt(y),
+                .width = 8,
+                .height = 8,
+            });
         }
         p.playdate.graphics.drawBitmap(tileImg, x, y, .BitmapUnflipped);
+    }
+
+    fn addEmptyCollisionSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
+        const sprite = try self.arena.newSprite();
+        errdefer self.arena.freeSprite(sprite);
+        const x = rect.x;
+        const y = rect.y;
+        const originRect = p.PDRect{
+            .x = 0,
+            .y = 0,
+            .width = rect.width,
+            .height = rect.height,
+        };
+        p.playdate.sprite.setCollideRect(sprite, originRect);
+        p.playdate.sprite.moveTo(sprite, x, y);
+        p.playdate.sprite.addSprite(sprite);
+        return sprite;
     }
 };
 
