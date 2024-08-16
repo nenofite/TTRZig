@@ -33,6 +33,13 @@ pub fn softFail(msg: [:0]const u8) void {
     // }
 }
 
+pub fn fmtPanic(comptime fmt: []const u8, args: anytype) noreturn {
+    var buf = [1]u8{0} ** 1024;
+    const msg = std.fmt.bufPrintZ(&buf, fmt, args) catch "(Format failure)";
+    playdate.system.@"error"(msg);
+    @panic(msg);
+}
+
 pub fn loadFont(path: [:0]const u8) *pdapi.LCDFont {
     const result = playdate.graphics.loadFont(@ptrCast(path), null);
     if (result == null) {

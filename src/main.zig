@@ -70,7 +70,7 @@ const MainScreen = struct {
         p.playdate.sprite.moveTo(sprite, 20, 20);
         p.playdate.sprite.addSprite(sprite);
 
-        self.loadLevel();
+        try self.loadLevel();
     }
 
     pub fn update(self: *MainScreen) !void {
@@ -82,7 +82,7 @@ const MainScreen = struct {
         self.arena.deinit();
     }
 
-    fn loadLevel(self: *MainScreen) void {
+    fn loadLevel(self: *MainScreen) !void {
         var arena = std.heap.ArenaAllocator.init(self.arena.alloc);
         defer arena.deinit();
 
@@ -94,20 +94,37 @@ const MainScreen = struct {
         p.log("Parsing file", .{});
         p.log("Arena size: {any}", .{arena.queryCapacity()});
 
+        var tileCount: u32 = 0;
         var parser = Parser.init(rawFile);
         defer parser.deinit();
         parseLines: while (true) {
             _ = parser.maybe('\n');
-            const x = parser.number() orelse break :parseLines;
+            const x = parser.number(i32) orelse break :parseLines;
             if (!parser.maybe(' ')) break :parseLines;
-            const y = parser.number() orelse break :parseLines;
+            const y = parser.number(i32) orelse break :parseLines;
             if (!parser.maybe(' ')) break :parseLines;
             const wallToken = parser.char() orelse break :parseLines;
             const isWall = wallToken == 'W';
             if (!parser.maybe(' ')) break :parseLines;
-            const id = parser.number() orelse break :parseLines;
-            p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
+            const id = parser.number(i32) orelse break :parseLines;
+            _ = try self.addTile(x, y, id, isWall);
+            tileCount += 1;
+            // p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
         }
+        p.log("Found {any} tiles", .{tileCount});
+    }
+
+    fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, isWall: bool) !*p.LCDSprite {
+        const sprite = try self.arena.newSprite();
+        errdefer self.arena.freeSprite(sprite);
+        const tileImg = p.playdate.graphics.getTableBitmap(images.dungeonTable, tileId) orelse return error.UnknownTile;
+        p.playdate.sprite.setImage(sprite, tileImg, .BitmapUnflipped);
+        if (isWall) {
+            // TODO collision
+        }
+        p.playdate.sprite.moveTo(sprite, @floatFromInt(x), @floatFromInt(y));
+        p.playdate.sprite.addSprite(sprite);
+        return sprite;
     }
 };
 
@@ -129,8 +146,8 @@ pub const Parser = struct {
 
     // Returns a decimal number or null if the current character is not a
     // digit
-    pub fn number(self: *@This()) ?usize {
-        var r: ?usize = null;
+    pub fn number(self: *@This(), comptime num: type) ?num {
+        var r: ?num = null;
 
         while (self.peek()) |code_point| {
             switch (code_point) {
