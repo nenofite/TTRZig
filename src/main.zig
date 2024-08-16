@@ -50,9 +50,32 @@ fn deinit() void {
     state.deinit();
 }
 
+const BlimpDynamics = struct {
+    const neutralBallast = 500;
+
+    x: f32,
+    y: f32,
+    velX: f32 = 0,
+    velY: f32 = 0,
+    ballast: i32 = neutralBallast,
+
+    pub fn update(self: *BlimpDynamics) void {
+        self.velX *= 0.99;
+        self.velY *= 0.99;
+        const diff = neutralBallast - self.ballast;
+        const unclampedRatio = @as(f32, @floatFromInt(diff)) / @as(f32, @floatFromInt(neutralBallast));
+        const ratio = std.math.clamp(unclampedRatio, -1, 1);
+        self.velY += ratio * 0.1;
+
+        self.x += self.velX;
+        self.y += self.velY;
+    }
+};
+
 const MainScreen = struct {
     arena: SpriteArena,
     blimp: ?*p.LCDSprite = null,
+    blimpState: BlimpDynamics = undefined,
 
     pub fn init() !MainScreen {
         var self = MainScreen{
@@ -72,20 +95,28 @@ const MainScreen = struct {
         errdefer self.arena.freeSprite(blimp);
         self.blimp = blimp;
 
+        const spawnX: f32 = @floatFromInt(spawnCoords[0]);
+        const spawnY: f32 = @floatFromInt(spawnCoords[1]);
+
         const image = p.playdate.graphics.getTableBitmap(images.spritesTable, 0) orelse @panic("Couldn't get sprites@0");
         p.playdate.sprite.setImage(blimp, image, .BitmapUnflipped);
         p.playdate.sprite.setCollideRect(blimp, .{ .x = 0, .y = 0, .width = 32, .height = 32 });
-        p.playdate.sprite.moveTo(blimp, @floatFromInt(spawnCoords[0]), @floatFromInt(spawnCoords[1]));
+        p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
         p.playdate.sprite.addSprite(blimp);
+        self.blimpState = .{ .x = spawnX, .y = spawnY };
     }
 
     pub fn update(self: *MainScreen) !void {
         const blimp = self.blimp.?;
+        self.blimpState.update();
         var x: f32 = 0;
         var y: f32 = 0;
-        p.playdate.sprite.getPosition(blimp, &x, &y);
-        const collisions = p.playdate.sprite.moveWithCollisions(blimp, x + 3, y, null, null, null);
+        const collisions = p.playdate.sprite.moveWithCollisions(blimp, self.blimpState.x, self.blimpState.y, &x, &y, null);
         if (collisions != null) _ = p.playdate.system.realloc(collisions, 0);
+
+        self.blimpState.x = x;
+        self.blimpState.y = y;
+        // self.blimpState.velX =
     }
 
     pub fn deinit(self: *MainScreen) void {
