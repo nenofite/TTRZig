@@ -10,6 +10,8 @@ pub var random: std.Random = undefined;
 pub var geo: *pdapi.LCDFont = undefined;
 pub var mans: *pdapi.LCDFont = undefined;
 
+var prevLogTime: ?u32 = null;
+
 pub fn init_playdate(pd: *pdapi.PlaydateAPI) void {
     playdate = pd;
 
@@ -126,10 +128,22 @@ pub const ButtonTracker = struct {
     }
 };
 
+fn markTime() ?u32 {
+    const now: u32 = playdate.system.getCurrentTimeMilliseconds();
+    const prevOpt = prevLogTime;
+    prevLogTime = now;
+    if (prevOpt) |prev| {
+        return now - prev;
+    } else {
+        return null;
+    }
+}
+
 pub fn log(comptime fmt: []const u8, args: anytype) void {
+    const elapsed = markTime() orelse 0;
     var buf = [1]u8{0} ** 1024;
     const fmtBuf = std.fmt.bufPrintZ(&buf, fmt, args) catch "(Format failed)";
-    playdate.system.logToConsole("%s", fmtBuf.ptr);
+    playdate.system.logToConsole("[+%ums] %s", elapsed, fmtBuf.ptr);
 }
 
 const alloc_impl = struct {
