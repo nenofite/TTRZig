@@ -98,24 +98,15 @@ const MainScreen = struct {
         defer parser.deinit();
         parseLines: while (true) {
             _ = parser.maybe('\n');
-            if (parser.number()) |x| {
-                if (parser.maybe(' ')) {
-                    if (parser.number()) |y| {
-                        if (parser.maybe(' ')) {
-                            if (parser.char()) |wallToken| {
-                                const isWall = wallToken == 'W';
-                                if (parser.maybe(' ')) {
-                                    if (parser.number()) |id| {
-                                        p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
-                                        continue :parseLines;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            break :parseLines;
+            const x = parser.number() orelse break :parseLines;
+            if (!parser.maybe(' ')) break :parseLines;
+            const y = parser.number() orelse break :parseLines;
+            if (!parser.maybe(' ')) break :parseLines;
+            const wallToken = parser.char() orelse break :parseLines;
+            const isWall = wallToken == 'W';
+            if (!parser.maybe(' ')) break :parseLines;
+            const id = parser.number() orelse break :parseLines;
+            p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
         }
     }
 };
