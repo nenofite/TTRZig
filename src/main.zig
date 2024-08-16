@@ -94,10 +94,8 @@ const MainScreen = struct {
         p.log("Parsing file", .{});
         p.log("Arena size: {any}", .{arena.queryCapacity()});
 
-        var parser = std.fmt.Parser{
-            .buf = rawFile,
-            .iter = .{ .bytes = rawFile, .i = 0 },
-        };
+        var parser = Parser.init(rawFile);
+        defer parser.deinit();
         parseLines: while (true) {
             _ = parser.maybe('\n');
             if (parser.number()) |x| {
@@ -119,6 +117,67 @@ const MainScreen = struct {
             }
             break :parseLines;
         }
+    }
+};
+
+pub const Parser = struct {
+    iter: std.unicode.Utf8Iterator,
+
+    pub fn init(buf: []const u8) Parser {
+        return .{
+            .iter = .{
+                .bytes = buf,
+                .i = 0,
+            },
+        };
+    }
+
+    pub fn deinit(self: *Parser) void {
+        _ = self;
+    }
+
+    // Returns a decimal number or null if the current character is not a
+    // digit
+    pub fn number(self: *@This()) ?usize {
+        var r: ?usize = null;
+
+        while (self.peek()) |code_point| {
+            switch (code_point) {
+                '0'...'9' => {
+                    if (r == null) r = 0;
+                    r.? *= 10;
+                    r.? += code_point - '0';
+                },
+                else => break,
+            }
+            _ = self.iter.nextCodepoint();
+        }
+
+        return r;
+    }
+
+    // Returns one character, if available
+    pub fn char(self: *@This()) ?u21 {
+        if (self.iter.nextCodepoint()) |code_point| {
+            return code_point;
+        }
+        return null;
+    }
+
+    pub fn maybe(self: *@This(), val: u21) bool {
+        if (self.peek() == val) {
+            _ = self.iter.nextCodepoint();
+            return true;
+        }
+        return false;
+    }
+
+    // Returns the n-th next character or null if that's past the end
+    pub fn peek(self: *@This()) ?u21 {
+        const original_i = self.iter.i;
+        defer self.iter.i = original_i;
+
+        return self.iter.nextCodepoint();
     }
 };
 
