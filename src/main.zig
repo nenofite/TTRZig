@@ -64,6 +64,10 @@ const MainScreen = struct {
     }
 
     pub fn start(self: *MainScreen) !void {
+        var spawnCoords = [2]i32{ 0, 0 };
+        const level = try self.loadLevel(&spawnCoords);
+        errdefer self.arena.freeSprite(level);
+
         const blimp = try self.arena.newSprite();
         errdefer self.arena.freeSprite(blimp);
         self.blimp = blimp;
@@ -71,11 +75,8 @@ const MainScreen = struct {
         const image = p.playdate.graphics.getTableBitmap(images.spritesTable, 0) orelse @panic("Couldn't get sprites@0");
         p.playdate.sprite.setImage(blimp, image, .BitmapUnflipped);
         p.playdate.sprite.setCollideRect(blimp, .{ .x = 0, .y = 0, .width = 32, .height = 32 });
-        p.playdate.sprite.moveTo(blimp, 50, 90);
+        p.playdate.sprite.moveTo(blimp, @floatFromInt(spawnCoords[0]), @floatFromInt(spawnCoords[1]));
         p.playdate.sprite.addSprite(blimp);
-
-        const level = try self.loadLevel();
-        errdefer self.arena.freeSprite(level);
     }
 
     pub fn update(self: *MainScreen) !void {
@@ -91,12 +92,25 @@ const MainScreen = struct {
         self.arena.deinit();
     }
 
-    fn loadLevel(self: *MainScreen) !*p.LCDSprite {
+    fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
         const alloc = self.arena.alloc;
         p.log("Loading file", .{});
         const rawFile = loadWholeFile(alloc, "minlevels.txt") catch @panic("Couldn't load minlevels.txt");
         defer alloc.free(rawFile);
         p.log("File size: {any}", .{rawFile.len});
+
+        var parser = Parser.init(rawFile);
+        defer parser.deinit();
+
+        // Spawn coords
+        if (!parser.maybe('S')) return error.NoSpawn;
+        if (!parser.maybe(' ')) return error.NoSpawn;
+        const spawnX = parser.number(i32) orelse return error.NoSpawn;
+        if (!parser.maybe(' ')) return error.NoSpawn;
+        const spawnY = parser.number(i32) orelse return error.NoSpawn;
+        if (!parser.maybe('\n')) return error.NoSpawn;
+
+        spawnCoords.* = .{ spawnX, spawnY };
 
         const levelImg = p.playdate.graphics.newBitmap(p.WIDTH, p.HEIGHT, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse @panic("Can't make level bitmap");
         errdefer p.playdate.graphics.freeBitmap(levelImg);
@@ -114,8 +128,6 @@ const MainScreen = struct {
             p.log("Parsing file", .{});
 
             var tileCount: u32 = 0;
-            var parser = Parser.init(rawFile);
-            defer parser.deinit();
             parseLines: while (true) {
                 _ = parser.maybe('\n');
                 const x = parser.number(i32) orelse break :parseLines;

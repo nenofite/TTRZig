@@ -63,6 +63,9 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     errdefer resultArr.deinit();
     const resultWriter = resultArr.writer();
 
+    const spawnPos = extractSpawnPosition(level);
+    try resultWriter.print("S {any} {any}\n", .{ spawnPos[0], spawnPos[1] });
+
     const wallIds = extractWallTileIDs(&root.root);
 
     for (mainLayer.autoLayerTiles) |tile| {
@@ -77,6 +80,16 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     try resultWriter.print("Done!\n", .{});
 
     return try resultArr.toOwnedSlice();
+}
+
+fn extractSpawnPosition(level: *const ldtk.Level) [2]i64 {
+    for (level.layerInstances.?) |layer| {
+        for (layer.entityInstances) |entity| {
+            if (!std.mem.eql(u8, entity.__identifier, "Spawn")) continue;
+            return entity.px;
+        }
+    }
+    @panic("Did not find Spawn entity");
 }
 
 fn extractWallTileIDs(root: *const ldtk.Root) []const i64 {
