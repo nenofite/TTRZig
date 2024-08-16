@@ -96,29 +96,31 @@ const MainScreen = struct {
 
         var parser = Parser.init(rawFile);
         defer parser.deinit();
-        parseLines(&parser) catch {};
-    }
-
-    fn parseLines(parser: *Parser) Parser.ParseMismatch!void {
-        while (true) {
-            parser.maybe('\n') catch {};
-            const x = try parser.number();
-            try parser.maybe(' ');
-            const y = try parser.number();
-            try parser.maybe(' ');
-            const wallToken = try parser.char();
-            const isWall = wallToken == 'W';
-            try parser.maybe(' ');
-            const id = try parser.number();
-
-            p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
+        parseLines: while (true) {
+            _ = parser.maybe('\n');
+            if (parser.number()) |x| {
+                if (parser.maybe(' ')) {
+                    if (parser.number()) |y| {
+                        if (parser.maybe(' ')) {
+                            if (parser.char()) |wallToken| {
+                                const isWall = wallToken == 'W';
+                                if (parser.maybe(' ')) {
+                                    if (parser.number()) |id| {
+                                        p.log("parsed: {any} {any} {any} {any}", .{ x, y, isWall, id });
+                                        continue :parseLines;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            break :parseLines;
         }
     }
 };
 
 pub const Parser = struct {
-    pub const ParseMismatch = error{ParseMismatch};
-
     iter: std.unicode.Utf8Iterator,
 
     pub fn init(buf: []const u8) Parser {
@@ -136,7 +138,7 @@ pub const Parser = struct {
 
     // Returns a decimal number or null if the current character is not a
     // digit
-    pub fn number(self: *@This()) ParseMismatch!usize {
+    pub fn number(self: *@This()) ?usize {
         var r: ?usize = null;
 
         while (self.peek()) |code_point| {
@@ -151,23 +153,23 @@ pub const Parser = struct {
             _ = self.iter.nextCodepoint();
         }
 
-        return r orelse return error.ParseMismatch;
+        return r;
     }
 
     // Returns one character, if available
-    pub fn char(self: *@This()) ParseMismatch!u21 {
+    pub fn char(self: *@This()) ?u21 {
         if (self.iter.nextCodepoint()) |code_point| {
             return code_point;
         }
-        return error.ParseMismatch;
+        return null;
     }
 
-    pub fn maybe(self: *@This(), val: u21) ParseMismatch!void {
+    pub fn maybe(self: *@This(), val: u21) bool {
         if (self.peek() == val) {
             _ = self.iter.nextCodepoint();
-        } else {
-            return error.ParseMismatch;
+            return true;
         }
+        return false;
     }
 
     // Returns the n-th next character or null if that's past the end
