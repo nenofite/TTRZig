@@ -11,6 +11,8 @@ const SpriteArena = @import("sprite_arena.zig").SpriteArena;
 
 pub const panic = panic_handler.panic;
 
+const TILE_SIZE = 8;
+
 pub export fn eventHandler(pd_: *p.PlaydateAPI, event: p.PDSystemEvent, arg: u32) callconv(.C) c_int {
     _ = arg;
     switch (event) {
@@ -138,8 +140,8 @@ const MainScreen = struct {
             _ = try self.addEmptyCollisionSprite(.{
                 .x = @floatFromInt(x),
                 .y = @floatFromInt(y),
-                .width = 8,
-                .height = 8,
+                .width = TILE_SIZE,
+                .height = TILE_SIZE,
             });
         }
         p.playdate.graphics.drawBitmap(tileImg, x, y, .BitmapUnflipped);
