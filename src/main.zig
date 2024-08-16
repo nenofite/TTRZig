@@ -119,7 +119,12 @@ const MainScreen = struct {
 
         const image = p.playdate.graphics.getTableBitmap(images.spritesTable, 0) orelse @panic("Couldn't get sprites@0");
         p.playdate.sprite.setImage(blimp, image, .BitmapUnflipped);
-        p.playdate.sprite.setCollideRect(blimp, .{ .x = 0, .y = 0, .width = 32, .height = 32 });
+        p.playdate.sprite.setCollideRect(blimp, .{
+            .x = 7,
+            .y = 8,
+            .width = 19,
+            .height = 18,
+        });
         p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
         p.playdate.sprite.setCollisionResponseFunction(blimp, alwaysSlide);
         p.playdate.sprite.addSprite(blimp);
