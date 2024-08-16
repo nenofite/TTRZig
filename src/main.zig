@@ -42,11 +42,11 @@ fn init(pd_: *p.PlaydateAPI) void {
     const allocd: ?*TopState = @ptrCast(@alignCast(p.playdate.system.realloc(null, @sizeOf(TopState))));
     state = allocd.?;
     state.* = TopState.init() catch @panic("Could not init TopState");
-    p.playdate.system.logToConsole("Finished setup");
+    p.log("Finished setup", .{});
 }
 
 fn deinit() void {
-    p.playdate.system.logToConsole("Tearing down");
+    p.log("Tearing down", .{});
     state.deinit();
 }
 
