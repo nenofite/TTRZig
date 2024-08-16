@@ -38,14 +38,12 @@ pub const SpriteArena = struct {
     }
 
     pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
-        for (self.sprites.items, 0..) |item, i| {
-            if (item == sprite) {
-                _ = self.sprites.swapRemove(i);
-                p.playdate.sprite.freeSprite(item);
-                return;
-            }
-        }
-        p.softFail("Tried to free sprite not in arena");
+        const i = std.mem.indexOfScalar(*p.LCDSprite, self.sprites.items, sprite) orelse {
+            p.softFail("Tried to free sprite not in arena");
+            return;
+        };
+        _ = self.sprites.swapRemove(i);
+        p.playdate.sprite.freeSprite(sprite);
     }
 };
 

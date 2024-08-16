@@ -83,16 +83,17 @@ const MainScreen = struct {
     }
 
     fn loadLevel(self: *MainScreen) !void {
-        var arena = std.heap.ArenaAllocator.init(self.arena.alloc);
-        defer arena.deinit();
+        // var arena = std.heap.ArenaAllocator.init(self.arena.alloc);
+        // defer arena.deinit();
 
-        const alloc = arena.allocator();
+        const alloc = self.arena.alloc;
         p.log("Loading file", .{});
-        p.log("Arena size: {any}", .{arena.queryCapacity()});
+        // p.log("Arena size: {any}", .{arena.queryCapacity()});
         const rawFile = loadWholeFile(alloc, "minlevels.txt") catch @panic("Couldn't load minlevels.txt");
         defer alloc.free(rawFile);
+        p.log("File size: {any}", .{rawFile.len});
         p.log("Parsing file", .{});
-        p.log("Arena size: {any}", .{arena.queryCapacity()});
+        // p.log("Arena size: {any}", .{arena.queryCapacity()});
 
         var tileCount: u32 = 0;
         var parser = Parser.init(rawFile);
