@@ -9,6 +9,7 @@ const images = @import("images.zig");
 
 const Haze = @import("Haze.zig");
 const SpriteArena = @import("SpriteArena.zig");
+const Camera = @import("Camera.zig");
 
 pub const panic = panic_handler.panic;
 
@@ -101,19 +102,17 @@ const MainScreen = struct {
     blimp: ?*p.LCDSprite = null,
     blimpState: BlimpDynamics = undefined,
     haze: *Haze = undefined,
+    camera: Camera = undefined,
 
     pub fn init() !*MainScreen {
-        const self = try p.allocator.create(MainScreen);
-        errdefer p.allocator.destroy(self);
-        self.* = .{
-            .arena = try SpriteArena.init(p.allocator),
-        };
-        errdefer self.arena.deinit();
-        try self.start();
-        return self;
-    }
+        const arena = try SpriteArena.init(p.allocator);
+        errdefer arena.deinit();
 
-    pub fn start(self: *MainScreen) !void {
+        const self = try arena.alloc.create(MainScreen);
+        errdefer arena.alloc.destroy(self);
+
+        self.* = .{ .arena = arena };
+
         var spawnCoords = [2]i32{ 0, 0 };
         const level = try self.loadLevel(&spawnCoords);
         errdefer self.arena.freeSprite(level);
@@ -140,6 +139,10 @@ const MainScreen = struct {
         p.playdate.sprite.setCollisionResponseFunction(blimp, alwaysSlide);
         p.playdate.sprite.addSprite(blimp);
         self.blimpState = .{ .x = spawnX, .y = spawnY };
+
+        self.camera = Camera.resetAt(self.blimpState.x, self.blimpState.y);
+
+        return self;
     }
 
     pub fn update(self: *MainScreen) !void {
@@ -153,9 +156,13 @@ const MainScreen = struct {
 
         self.blimpState.x = x;
         self.blimpState.y = y;
-        // self.blimpState.velX =
+        self.camera.update(x, y);
 
-        self.haze.update(.{ @intFromFloat(x), @intFromFloat(y) });
+        const offset = self.camera.setGraphicsOffset();
+        self.haze.update(.{
+            @as(i32, @intFromFloat(x)) + offset[0],
+            @as(i32, @intFromFloat(y)) + offset[1],
+        });
     }
 
     pub fn deinit(self: *MainScreen) void {
