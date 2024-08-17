@@ -7,26 +7,67 @@ const SpriteArena = @This();
 alloc: std.mem.Allocator,
 sprites: std.ArrayList(*p.LCDSprite),
 
-pub fn init(alloc: std.mem.Allocator) !SpriteArena {
+parent: ?*SpriteArena = null,
+children: std.ArrayList(*SpriteArena),
+
+pub fn init(alloc: std.mem.Allocator) !*SpriteArena {
+    const self = try alloc.create(SpriteArena);
+    errdefer alloc.destroy(self);
+
     const sprites = try std.ArrayList(*p.LCDSprite).initCapacity(alloc, 8);
     errdefer sprites.deinit();
 
-    return .{
+    self.* = .{
         .alloc = alloc,
         .sprites = sprites,
+        .children = std.ArrayList(*SpriteArena).init(alloc),
     };
+
+    return self;
 }
 
 pub fn deinit(self: *SpriteArena) void {
+    self.deinitInner(false);
+}
+
+fn deinitInner(self: *SpriteArena, skipParent: bool) void {
+    for (self.children.items) |child| {
+        child.deinitInner(true);
+    }
     for (self.sprites.items) |i| {
         p.playdate.sprite.freeSprite(i);
     }
     self.sprites.deinit();
+    if (!skipParent) if (self.parent) |parent| {
+        parent.removeChild(self);
+    };
     // self.arena.deinit();
+}
+
+fn removeChild(self: *SpriteArena, child: *SpriteArena) void {
+    const i = std.mem.indexOfScalar(*SpriteArena, self.children.items, child) orelse {
+        p.softFail("Not a child of this arena");
+        return;
+    };
+    _ = self.children.swapRemove(i);
+    child.parent = undefined;
 }
 
 pub fn allocator(self: *SpriteArena) std.mem.Allocator {
     return self.alloc;
+}
+
+pub fn newChild(self: *SpriteArena) !*SpriteArena {
+    const child = try init(self.alloc);
+    errdefer self.alloc.destroy(child);
+
+    child.parent = self;
+
+    const childSlot = try self.children.addOne();
+    errdefer _ = self.children.pop();
+    childSlot.* = child;
+
+    return child;
 }
 
 pub fn newSprite(self: *SpriteArena) !*p.LCDSprite {

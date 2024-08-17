@@ -97,7 +97,7 @@ fn alwaysSlide(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteC
 }
 
 const MainScreen = struct {
-    arena: SpriteArena,
+    arena: *SpriteArena,
     blimp: ?*p.LCDSprite = null,
     blimpState: BlimpDynamics = undefined,
     haze: Haze = undefined,
@@ -122,7 +122,7 @@ const MainScreen = struct {
         errdefer self.arena.freeSprite(blimp);
         self.blimp = blimp;
 
-        self.haze = try Haze.init(&self.arena);
+        self.haze = try Haze.init(self.arena);
         errdefer self.haze.deinit();
 
         const spawnX: f32 = @floatFromInt(spawnCoords[0]);
