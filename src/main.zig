@@ -142,6 +142,8 @@ const MainScreen = struct {
 
         self.camera = Camera.resetAt(self.blimpState.x, self.blimpState.y);
 
+        p.playdate.graphics.setBackgroundColor(.ColorBlack);
+
         return self;
     }
 
