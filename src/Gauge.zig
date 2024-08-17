@@ -7,9 +7,12 @@ const SpriteArena = @import("SpriteArena.zig");
 
 const Gauge = @This();
 
+const backgroundPat = [8]u8{ 0x7F, 0xFF, 0xFF, 0xFF, 0xF7, 0xFF, 0xFF, 0xFF } ++ pat.alphaMask;
+
 arena: *SpriteArena,
 sprite: *p.LCDSprite,
 img: *p.LCDBitmap,
+baseImg: *p.LCDBitmap,
 
 ticks: u8,
 
@@ -48,6 +51,13 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
     ) orelse return error.OutOfMemory;
     errdefer p.playdate.graphics.freeBitmap(img);
 
+    const baseImg = p.playdate.graphics.newBitmap(
+        options.radius * 2,
+        options.radius * 2,
+        @intFromEnum(p.LCDSolidColor.ColorClear),
+    ) orelse return error.OutOfMemory;
+    errdefer p.playdate.graphics.freeBitmap(baseImg);
+
     p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
     p.playdate.sprite.moveTo(sprite, options.cx, options.cy);
     p.playdate.sprite.setZIndex(sprite, options.zIndex);
@@ -58,6 +68,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
         .arena = arena,
         .sprite = sprite,
         .img = img,
+        .baseImg = baseImg,
         .ticks = options.ticks,
         .minAngle = options.minAngle,
         .maxAngle = options.maxAngle,
@@ -65,12 +76,15 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
         .radius = options.radius,
     };
 
+    self.drawBaseImg();
+
     return self;
 }
 
 pub fn deinit(self: *Gauge) void {
     const arena = self.arena;
     p.playdate.graphics.freeBitmap(self.img);
+    p.playdate.graphics.freeBitmap(self.baseImg);
     arena.freeSprite(self.sprite);
     arena.alloc.destroy(self);
     arena.deinit();
@@ -92,6 +106,19 @@ fn draw(self: *Gauge) void {
     p.playdate.graphics.pushContext(self.img);
     defer p.playdate.graphics.popContext();
 
+    p.playdate.graphics.clear(@intFromEnum(p.LCDSolidColor.ColorClear));
+
+    p.playdate.graphics.drawBitmap(self.baseImg, 0, 0, .BitmapUnflipped);
+    self.drawNeedle(self.angle);
+    self.drawPin();
+}
+
+fn drawBaseImg(self: *Gauge) void {
+    p.playdate.graphics.pushContext(self.baseImg);
+    defer p.playdate.graphics.popContext();
+
+    p.playdate.graphics.clear(@intFromEnum(p.LCDSolidColor.ColorClear));
+
     self.drawBase();
 
     if (self.ticks > 0) {
@@ -103,8 +130,6 @@ fn draw(self: *Gauge) void {
         self.drawTick(self.maxAngle);
     }
 
-    self.drawNeedle(self.angle);
-    self.drawPin();
     self.drawFrame();
 }
 
@@ -169,7 +194,7 @@ fn drawBase(self: *Gauge) void {
         radius * 2,
         0,
         360,
-        @intFromPtr(&pat.lightgray),
+        @intFromPtr(&backgroundPat),
     );
 }
 
@@ -178,17 +203,17 @@ fn drawFrame(self: *Gauge) void {
     const radius = self.radius;
     p.playdate.graphics.drawEllipse(
         center - radius,
-        center - radius,
+        center - radius + 1,
         radius * 2,
         radius * 2,
-        5,
+        3,
         0,
         360,
         @intFromEnum(p.LCDSolidColor.ColorBlack),
     );
     p.playdate.graphics.drawEllipse(
         center - radius,
-        center - radius - 1,
+        center - radius,
         radius * 2,
         radius * 2,
         1,
