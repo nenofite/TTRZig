@@ -10,6 +10,7 @@ const images = @import("images.zig");
 const Haze = @import("Haze.zig");
 const SpriteArena = @import("SpriteArena.zig");
 const Camera = @import("Camera.zig");
+const Gauge = @import("Gauge.zig");
 
 pub const panic = panic_handler.panic;
 
@@ -103,6 +104,7 @@ const MainScreen = struct {
     blimpState: BlimpDynamics = undefined,
     haze: *Haze = undefined,
     camera: Camera = undefined,
+    ballastGauge: *Gauge = undefined,
 
     pub fn init() !*MainScreen {
         const arena = try SpriteArena.init(p.allocator);
@@ -123,6 +125,17 @@ const MainScreen = struct {
 
         self.haze = try Haze.init(self.arena);
         errdefer self.haze.deinit();
+
+        self.ballastGauge = try Gauge.init(self.arena, .{
+            .cx = p.WIDTH - 160,
+            .cy = p.HEIGHT,
+            .maxAngle = 270 - 80,
+            .minAngle = 270 + 80,
+            .ticks = 5,
+            .radius = 30,
+            .zIndex = 5,
+        });
+        errdefer self.ballastGauge.deinit();
 
         const spawnX: f32 = @floatFromInt(spawnCoords[0]);
         const spawnY: f32 = @floatFromInt(spawnCoords[1]);
@@ -160,6 +173,8 @@ const MainScreen = struct {
         self.blimpState.y = y;
         self.camera.update(x, y);
 
+        self.ballastGauge.update();
+
         const offset = self.camera.setGraphicsOffset();
         self.haze.update(.{
             @as(i32, @intFromFloat(x)) + offset[0],
@@ -168,9 +183,11 @@ const MainScreen = struct {
     }
 
     pub fn deinit(self: *MainScreen) void {
+        const arena = self.arena;
         self.haze.deinit();
-        self.arena.deinit();
-        p.allocator.destroy(self);
+        self.ballastGauge.deinit();
+        arena.alloc.destroy(self);
+        arena.deinit();
     }
 
     fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {

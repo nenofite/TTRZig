@@ -73,7 +73,10 @@ pub fn init(parentArena: *SpriteArena) !*@This() {
 pub fn deinit(self: *@This()) void {
     p.playdate.graphics.freeBitmap(self.spriteImg);
     self.arena.freeSprite(self.sprite);
-    self.arena.deinit();
+
+    const arena = self.arena;
+    arena.alloc.destroy(self);
+    arena.deinit();
 }
 
 pub fn update(self: *@This(), focus: [2]i32) void {
