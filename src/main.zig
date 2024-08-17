@@ -8,7 +8,7 @@ const sounds = @import("sounds.zig");
 const images = @import("images.zig");
 
 const Haze = @import("Haze.zig");
-const SpriteArena = @import("sprite_arena.zig").SpriteArena;
+const SpriteArena = @import("SpriteArena.zig");
 
 pub const panic = panic_handler.panic;
 

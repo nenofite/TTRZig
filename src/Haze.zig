@@ -4,7 +4,7 @@ const tween = @import("tween.zig");
 const pat = @import("pattern.zig");
 const perlin = @import("perlin.zig");
 
-const SpriteArena = @import("sprite_arena.zig").SpriteArena;
+const SpriteArena = @import("SpriteArena.zig");
 
 const haze = &([8]u8{ 0x80, 0x0, 0x0, 0x0, 0x8, 0x0, 0x0, 0x0 } ++ pat.alphaMask);
 

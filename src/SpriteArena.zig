@@ -1,51 +1,51 @@
 const std = @import("std");
 const p = @import("global_playdate.zig");
 
-pub const SpriteArena = struct {
-    // alloc_inner: *TrackedAllocator,
-    alloc: std.mem.Allocator,
-    sprites: std.ArrayList(*p.LCDSprite),
+const SpriteArena = @This();
 
-    pub fn init(alloc: std.mem.Allocator) !SpriteArena {
-        const sprites = try std.ArrayList(*p.LCDSprite).initCapacity(alloc, 8);
-        errdefer sprites.deinit();
+// alloc_inner: *TrackedAllocator,
+alloc: std.mem.Allocator,
+sprites: std.ArrayList(*p.LCDSprite),
 
-        return .{
-            .alloc = alloc,
-            .sprites = sprites,
-        };
+pub fn init(alloc: std.mem.Allocator) !SpriteArena {
+    const sprites = try std.ArrayList(*p.LCDSprite).initCapacity(alloc, 8);
+    errdefer sprites.deinit();
+
+    return .{
+        .alloc = alloc,
+        .sprites = sprites,
+    };
+}
+
+pub fn deinit(self: *SpriteArena) void {
+    for (self.sprites.items) |i| {
+        p.playdate.sprite.freeSprite(i);
     }
+    self.sprites.deinit();
+    // self.arena.deinit();
+}
 
-    pub fn deinit(self: *SpriteArena) void {
-        for (self.sprites.items) |i| {
-            p.playdate.sprite.freeSprite(i);
-        }
-        self.sprites.deinit();
-        // self.arena.deinit();
-    }
+pub fn allocator(self: *SpriteArena) std.mem.Allocator {
+    return self.alloc;
+}
 
-    pub fn allocator(self: *SpriteArena) std.mem.Allocator {
-        return self.alloc;
-    }
+pub fn newSprite(self: *SpriteArena) !*p.LCDSprite {
+    const sprite = p.playdate.sprite.newSprite() orelse return error.CannotAllocateSprite;
+    errdefer p.playdate.sprite.freeSprite(sprite);
 
-    pub fn newSprite(self: *SpriteArena) !*p.LCDSprite {
-        const sprite = p.playdate.sprite.newSprite() orelse return error.CannotAllocateSprite;
-        errdefer p.playdate.sprite.freeSprite(sprite);
+    const slot = try self.sprites.addOne();
+    slot.* = sprite;
+    return sprite;
+}
 
-        const slot = try self.sprites.addOne();
-        slot.* = sprite;
-        return sprite;
-    }
-
-    pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
-        const i = std.mem.indexOfScalar(*p.LCDSprite, self.sprites.items, sprite) orelse {
-            p.softFail("Tried to free sprite not in arena");
-            return;
-        };
-        _ = self.sprites.swapRemove(i);
-        p.playdate.sprite.freeSprite(sprite);
-    }
-};
+pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
+    const i = std.mem.indexOfScalar(*p.LCDSprite, self.sprites.items, sprite) orelse {
+        p.softFail("Tried to free sprite not in arena");
+        return;
+    };
+    _ = self.sprites.swapRemove(i);
+    p.playdate.sprite.freeSprite(sprite);
+}
 
 // const TrackedAllocator = struct {
 //     const OpenList = std.DoublyLinkedList(*anyopaque);
