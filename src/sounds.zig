@@ -1,7 +1,7 @@
 const std = @import("std");
 const p = @import("global_playdate.zig");
 
-pub var thruster: *p.SamplePlayer = undefined;
+pub var click3: *p.SamplePlayer = undefined;
 
 fn make(path: [*c]const u8) !*p.SamplePlayer {
     const sample = p.playdate.sound.sample.load(path) orelse {
@@ -23,7 +23,7 @@ fn metaMake(comptime name: []const u8) *p.SamplePlayer {
 }
 
 pub fn init() void {
-    thruster = metaMake("thruster");
+    click3 = metaMake("click3");
 }
 
 pub fn playOnce(sound: *p.SamplePlayer) void {

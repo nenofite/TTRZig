@@ -64,6 +64,8 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
     p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
 
+    const startAngle = options.minAngle;
+
     self.* = .{
         .arena = arena,
         .sprite = sprite,
@@ -72,7 +74,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
         .ticks = options.ticks,
         .minAngle = options.minAngle,
         .maxAngle = options.maxAngle,
-        .angle = options.minAngle,
+        .angle = startAngle,
         .radius = options.radius,
     };
 
