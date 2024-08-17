@@ -140,7 +140,8 @@ const MainScreen = struct {
         self.blimpState.update();
         var x: f32 = 0;
         var y: f32 = 0;
-        const collisions = p.playdate.sprite.moveWithCollisions(blimp, self.blimpState.x, self.blimpState.y, &x, &y, null);
+        var len: c_int = 0;
+        const collisions = p.playdate.sprite.moveWithCollisions(blimp, self.blimpState.x, self.blimpState.y, &x, &y, &len);
         if (collisions != null) _ = p.playdate.system.realloc(collisions, 0);
 
         self.blimpState.x = x;
