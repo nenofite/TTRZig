@@ -61,7 +61,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
         .ticks = options.ticks,
         .minAngle = options.minAngle,
         .maxAngle = options.maxAngle,
-        .angle = 0,
+        .angle = options.minAngle,
         .radius = options.radius,
     };
 
@@ -74,6 +74,13 @@ pub fn deinit(self: *Gauge) void {
     arena.freeSprite(self.sprite);
     arena.alloc.destroy(self);
     arena.deinit();
+}
+
+pub fn setFraction(self: *Gauge, frac: f32) void {
+    const fracClamped = std.math.clamp(frac, 0, 1);
+    const angleTarget = std.math.lerp(self.minAngle, self.maxAngle, fracClamped);
+    const f = 0.05;
+    self.angle = std.math.lerp(self.angle, angleTarget, f);
 }
 
 pub fn update(self: *Gauge) void {
@@ -89,9 +96,11 @@ fn draw(self: *Gauge) void {
 
     if (self.ticks > 0) {
         const tickDelta = (self.maxAngle - self.minAngle) / @as(f32, @floatFromInt(self.ticks - 1));
-        for (1..self.ticks - 2) |t| {
-            self.drawTick(@as(f32, @floatFromInt(t)) * tickDelta);
+        for (1..self.ticks - 1) |t| {
+            self.drawTick(self.minAngle + @as(f32, @floatFromInt(t)) * tickDelta);
         }
+        self.drawTick(self.minAngle);
+        self.drawTick(self.maxAngle);
     }
 
     self.drawNeedle(self.angle);

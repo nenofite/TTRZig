@@ -90,6 +90,11 @@ const BlimpDynamics = struct {
         self.x += self.velX;
         self.y += self.velY;
     }
+
+    pub fn fraction(self: *const BlimpDynamics) f32 {
+        const unclamped = @as(f32, @floatFromInt(self.ballast)) / (neutralBallast * 2);
+        return std.math.clamp(unclamped, 0, 1);
+    }
 };
 
 fn alwaysSlide(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
@@ -129,8 +134,8 @@ const MainScreen = struct {
         self.ballastGauge = try Gauge.init(self.arena, .{
             .cx = p.WIDTH - 10,
             .cy = p.HEIGHT - 10,
-            .maxAngle = 340,
-            .minAngle = 290,
+            .maxAngle = 280,
+            .minAngle = 170,
             .ticks = 5,
             .radius = 30,
             .zIndex = 10,
@@ -173,6 +178,7 @@ const MainScreen = struct {
         self.blimpState.y = y;
         self.camera.update(x, y);
 
+        self.ballastGauge.setFraction(self.blimpState.fraction());
         self.ballastGauge.update();
 
         const offset = self.camera.setGraphicsOffset();
