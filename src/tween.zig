@@ -146,200 +146,206 @@ pub const Tween = struct {
     }
 };
 
-pub fn List(comptime max: usize) type {
-    return struct {
-        const Self = @This();
+pub const List = struct {
+    storage: std.ArrayList(Tween),
 
-        storage: std.BoundedArray(Tween, max) = .{},
-
-        pub fn isActive(self: *const Self) bool {
-            return self.storage.len > 0;
-        }
-
-        pub fn update(self: *Self) bool {
-            var i: usize = 0;
-            while (i < self.storage.len) {
-                if (self.storage.slice()[i].update()) {
-                    self.remove(i);
-                } else {
-                    i += 1;
-                }
-            }
-            return self.isActive();
-        }
-
-        fn remove(self: *Self, i: usize) void {
-            std.debug.assert(i < self.storage.len);
-            _ = self.storage.swapRemove(i);
-        }
-
-        pub fn cancelClear(self: *Self) void {
-            self.storage.resize(0) catch unreachable;
-        }
-
-        pub fn finishClear(self: *Self) void {
-            for (self.storage.slice()) |*t| {
-                t.fast_forward();
-            }
-            self.cancelClear();
-        }
-
-        pub fn add(self: *Self, tween: Tween) !void {
-            try self.storage.append(tween);
-        }
-
-        pub fn addIfRoom(self: *Self, tween: Tween) void {
-            self.storage.append(tween) catch {};
-        }
-
-        pub fn addOrFF(self: *Self, tween: Tween) void {
-            self.add(tween) catch {
-                tween.fast_forward();
-            };
-        }
-
-        pub fn build(self: *Self) Builder {
-            return .{
-                .into = self,
-            };
-        }
-
-        pub const Builder = struct {
-            into: *Self,
-            all_finish_at: u32 = 0,
-            last_start_at: u32 = 0,
-            mode: enum { seq, par } = .seq,
-            ease: Ease = Ease.linear,
-            fast_forwarding: bool = false,
-
-            fn append(b: *Builder, t: Tween) void {
-                if (b.fast_forwarding) {
-                    t.fast_forward();
-                    return;
-                }
-
-                var t_ = t;
-
-                switch (b.mode) {
-                    .seq => {
-                        t_.delay += b.all_finish_at;
-                        b.all_finish_at = t_.delay + t_.dur;
-                        b.last_start_at = t_.delay;
-                    },
-                    .par => {
-                        t_.delay += b.last_start_at;
-                        b.all_finish_at = @max(b.all_finish_at, t_.delay + t_.dur);
-                    },
-                }
-                b.into.add(t_) catch {
-                    b.fast_forwarding = true;
-                    b.into.finishClear();
-                    t_.fast_forward();
-                };
-            }
-
-            pub fn parallel(b: *Builder) void {
-                b.mode = .par;
-            }
-
-            pub fn sequential(b: *Builder) void {
-                b.mode = .seq;
-            }
-
-            pub fn of_f32(b: *Builder, target: *f32, from: ?f32, to: f32, dur: u32, delay: u32) void {
-                b.append(.{
-                    .delay = delay,
-                    .dur = dur,
-                    .ease = b.ease,
-                    .target = .{
-                        .f32 = .{
-                            .target = target,
-                            .from = from,
-                            .to = to,
-                        },
-                    },
-                });
-            }
-
-            pub fn of_i32(b: *Builder, target: *i32, from: ?i32, to: i32, dur: u32, delay: u32) void {
-                b.append(.{
-                    .delay = delay,
-                    .dur = dur,
-                    .ease = b.ease,
-                    .target = .{
-                        .i32 = .{
-                            .target = target,
-                            .from = from,
-                            .to = to,
-                        },
-                    },
-                });
-            }
-
-            pub fn of_discrete(b: *Builder, comptime T: type, target: *T, to: T, delay: u32) void {
-                comptime std.debug.assert(@sizeOf(T) <= maxDiscreteSize);
-                var toArr = [1]u8{0} ** maxDiscreteSize;
-                const toArrPtr: *T = @alignCast(std.mem.bytesAsValue(T, &toArr));
-                toArrPtr.* = to;
-                b.append(.{
-                    .delay = delay,
-                    .dur = 0,
-                    .ease = b.ease,
-                    .target = .{ .discrete = .{
-                        .target = std.mem.asBytes(target),
-                        .to = toArr,
-                    } },
-                });
-            }
-
-            pub fn of_discrete_ptr(b: *Builder, comptime T: type, noalias target: *T, noalias to: *const T, delay: u32) void {
-                std.debug.assert(target != to);
-                b.append(.{
-                    .delay = delay,
-                    .dur = 0,
-                    .ease = b.ease,
-                    .target = .{ .slice = .{
-                        .target = std.mem.asBytes(target),
-                        .to = std.mem.asBytes(to),
-                    } },
-                });
-            }
-
-            pub fn of_none(b: *Builder, dur: u32) void {
-                b.append(.{
-                    .delay = 0,
-                    .dur = dur,
-                    .ease = b.ease,
-                    .target = .none,
-                });
-            }
-
-            pub fn rewind(b: *Builder, dur: u32) void {
-                b.last_start_at -|= dur;
-                b.all_finish_at -|= dur;
-            }
-
-            pub fn wait(b: *Builder, dur: u32) void {
-                switch (b.mode) {
-                    .seq => {
-                        b.last_start_at = b.all_finish_at;
-                        b.all_finish_at += dur;
-                    },
-                    .par => {
-                        b.last_start_at += dur;
-                        b.all_finish_at = @max(b.all_finish_at, b.last_start_at);
-                    },
-                }
-            }
-
-            pub fn must_fit(b: *const Builder) !void {
-                if (b.fast_forwarding) {
-                    return error.Overflow;
-                }
-            }
+    pub fn init(alloc: std.mem.Allocator) !List {
+        return .{
+            .storage = std.ArrayList(Tween).init(alloc),
         };
+    }
+
+    pub fn deinit(self: *List) void {
+        self.storage.deinit();
+    }
+
+    pub fn isActive(self: *const List) bool {
+        return self.storage.items.len > 0;
+    }
+
+    pub fn update(self: *List) bool {
+        var i: usize = 0;
+        while (i < self.storage.items.len) {
+            if (self.storage.items[i].update()) {
+                self.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+        return self.isActive();
+    }
+
+    fn remove(self: *List, i: usize) void {
+        std.debug.assert(i < self.storage.items.len);
+        _ = self.storage.swapRemove(i);
+    }
+
+    pub fn cancelClear(self: *List) void {
+        self.storage.resize(0) catch unreachable;
+    }
+
+    pub fn finishClear(self: *List) void {
+        for (self.storage.items) |*t| {
+            t.fast_forward();
+        }
+        self.cancelClear();
+    }
+
+    pub fn add(self: *List, tween: Tween) !void {
+        try self.storage.append(tween);
+    }
+
+    pub fn addIfRoom(self: *List, tween: Tween) void {
+        self.storage.append(tween) catch {};
+    }
+
+    pub fn addOrFF(self: *List, tween: Tween) void {
+        self.add(tween) catch {
+            tween.fast_forward();
+        };
+    }
+
+    pub fn build(self: *List) Builder {
+        return .{
+            .into = self,
+        };
+    }
+
+    pub const Builder = struct {
+        into: *List,
+        all_finish_at: u32 = 0,
+        last_start_at: u32 = 0,
+        mode: enum { seq, par } = .seq,
+        ease: Ease = Ease.linear,
+        fast_forwarding: bool = false,
+
+        fn append(b: *Builder, t: Tween) void {
+            if (b.fast_forwarding) {
+                t.fast_forward();
+                return;
+            }
+
+            var t_ = t;
+
+            switch (b.mode) {
+                .seq => {
+                    t_.delay += b.all_finish_at;
+                    b.all_finish_at = t_.delay + t_.dur;
+                    b.last_start_at = t_.delay;
+                },
+                .par => {
+                    t_.delay += b.last_start_at;
+                    b.all_finish_at = @max(b.all_finish_at, t_.delay + t_.dur);
+                },
+            }
+            b.into.add(t_) catch {
+                b.fast_forwarding = true;
+                b.into.finishClear();
+                t_.fast_forward();
+            };
+        }
+
+        pub fn parallel(b: *Builder) void {
+            b.mode = .par;
+        }
+
+        pub fn sequential(b: *Builder) void {
+            b.mode = .seq;
+        }
+
+        pub fn of_f32(b: *Builder, target: *f32, from: ?f32, to: f32, dur: u32, delay: u32) void {
+            b.append(.{
+                .delay = delay,
+                .dur = dur,
+                .ease = b.ease,
+                .target = .{
+                    .f32 = .{
+                        .target = target,
+                        .from = from,
+                        .to = to,
+                    },
+                },
+            });
+        }
+
+        pub fn of_i32(b: *Builder, target: *i32, from: ?i32, to: i32, dur: u32, delay: u32) void {
+            b.append(.{
+                .delay = delay,
+                .dur = dur,
+                .ease = b.ease,
+                .target = .{
+                    .i32 = .{
+                        .target = target,
+                        .from = from,
+                        .to = to,
+                    },
+                },
+            });
+        }
+
+        pub fn of_discrete(b: *Builder, comptime T: type, target: *T, to: T, delay: u32) void {
+            comptime std.debug.assert(@sizeOf(T) <= maxDiscreteSize);
+            var toArr = [1]u8{0} ** maxDiscreteSize;
+            const toArrPtr: *T = @alignCast(std.mem.bytesAsValue(T, &toArr));
+            toArrPtr.* = to;
+            b.append(.{
+                .delay = delay,
+                .dur = 0,
+                .ease = b.ease,
+                .target = .{ .discrete = .{
+                    .target = std.mem.asBytes(target),
+                    .to = toArr,
+                } },
+            });
+        }
+
+        pub fn of_discrete_ptr(b: *Builder, comptime T: type, noalias target: *T, noalias to: *const T, delay: u32) void {
+            std.debug.assert(target != to);
+            b.append(.{
+                .delay = delay,
+                .dur = 0,
+                .ease = b.ease,
+                .target = .{ .slice = .{
+                    .target = std.mem.asBytes(target),
+                    .to = std.mem.asBytes(to),
+                } },
+            });
+        }
+
+        pub fn of_none(b: *Builder, dur: u32) void {
+            b.append(.{
+                .delay = 0,
+                .dur = dur,
+                .ease = b.ease,
+                .target = .none,
+            });
+        }
+
+        pub fn rewind(b: *Builder, dur: u32) void {
+            b.last_start_at -|= dur;
+            b.all_finish_at -|= dur;
+        }
+
+        pub fn wait(b: *Builder, dur: u32) void {
+            switch (b.mode) {
+                .seq => {
+                    b.last_start_at = b.all_finish_at;
+                    b.all_finish_at += dur;
+                },
+                .par => {
+                    b.last_start_at += dur;
+                    b.all_finish_at = @max(b.all_finish_at, b.last_start_at);
+                },
+            }
+        }
+
+        pub fn must_fit(b: *const Builder) !void {
+            if (b.fast_forwarding) {
+                return error.Overflow;
+            }
+        }
     };
-}
+};
 
 pub const Timer = struct {
     dur: u32 = 0,

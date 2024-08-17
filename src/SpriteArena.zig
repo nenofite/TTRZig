@@ -1,11 +1,13 @@
 const std = @import("std");
 const p = @import("global_playdate.zig");
+const tween = @import("tween.zig");
 
 const SpriteArena = @This();
 
 // alloc_inner: *TrackedAllocator,
 alloc: std.mem.Allocator,
 sprites: std.ArrayList(*p.LCDSprite),
+tweens: tween.List,
 
 parent: ?*SpriteArena = null,
 children: std.ArrayList(*SpriteArena),
@@ -17,9 +19,13 @@ pub fn init(alloc: std.mem.Allocator) !*SpriteArena {
     const sprites = try std.ArrayList(*p.LCDSprite).initCapacity(alloc, 8);
     errdefer sprites.deinit();
 
+    const tweens = try tween.List.init(alloc);
+    errdefer tweens.deinit();
+
     self.* = .{
         .alloc = alloc,
         .sprites = sprites,
+        .tweens = tweens,
         .children = std.ArrayList(*SpriteArena).init(alloc),
     };
 
@@ -31,6 +37,7 @@ pub fn deinit(self: *SpriteArena) void {
 }
 
 fn deinitInner(self: *SpriteArena, skipParent: bool) void {
+    self.tweens.deinit();
     for (self.children.items) |child| {
         child.deinitInner(true);
     }

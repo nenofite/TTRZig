@@ -33,14 +33,27 @@ fn drawBubble(bx: i32, by: i32, r: i32) void {
 arena: *SpriteArena,
 sprite: *p.LCDSprite,
 spriteImg: *p.LCDBitmap,
+bubbleRadius: i32 = 0,
 
-pub fn init(arena: *SpriteArena) !@This() {
+pub fn init(parentArena: *SpriteArena) !*@This() {
+    const arena = try parentArena.newChild();
+    errdefer arena.deinit();
+
+    const self = try arena.alloc.create(@This());
+    errdefer arena.alloc.destroy(self);
+
     const sprite = try arena.newSprite();
     errdefer arena.freeSprite(sprite);
 
     const spriteImg = p.playdate.graphics.newBitmap(p.WIDTH, p.HEIGHT, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse
         return error.OutOfMemory;
     errdefer p.playdate.graphics.freeBitmap(spriteImg);
+
+    self.* = .{
+        .arena = arena,
+        .sprite = sprite,
+        .spriteImg = spriteImg,
+    };
 
     // p.playdate.sprite.setSize(sprite, p.WIDTH, p.HEIGHT);
     p.playdate.sprite.setImage(sprite, spriteImg, .BitmapUnflipped);
@@ -52,25 +65,31 @@ pub fn init(arena: *SpriteArena) !@This() {
     // p.playdate.sprite.setDrawFunction(sprite, drawSprite);
     p.playdate.sprite.addSprite(sprite);
 
-    return .{
-        .arena = arena,
-        .sprite = sprite,
-        .spriteImg = spriteImg,
-    };
+    self.ignite();
+
+    return self;
 }
 
 pub fn deinit(self: *@This()) void {
     p.playdate.graphics.freeBitmap(self.spriteImg);
     self.arena.freeSprite(self.sprite);
+    self.arena.deinit();
 }
 
 pub fn update(self: *@This(), focus: [2]i32) void {
+    _ = self.arena.tweens.update();
     const t = p.playdate.system.getCurrentTimeMilliseconds();
     const noiseOffset: f32 = @as(f32, @floatFromInt(t)) / 500;
     const flicker = perlin.noise(f32, .{ .x = noiseOffset }) * 0.1 + 0.9;
-    const r = @as(i32, @intFromFloat(baseRadius * flicker));
+    const r = @as(i32, @intFromFloat(@as(f32, @floatFromInt(self.bubbleRadius)) * flicker));
     self.drawImage(focus, r);
     p.playdate.sprite.markDirty(self.sprite);
+}
+
+fn ignite(self: *@This()) void {
+    var b = self.arena.tweens.build();
+    b.ease = .{ .curve = .cubic, .ends = .out };
+    b.of_i32(&self.bubbleRadius, 0, baseRadius, 500, 0);
 }
 
 fn drawImage(self: *@This(), focus: [2]i32, r: i32) void {

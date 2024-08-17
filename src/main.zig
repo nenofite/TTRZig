@@ -100,7 +100,7 @@ const MainScreen = struct {
     arena: *SpriteArena,
     blimp: ?*p.LCDSprite = null,
     blimpState: BlimpDynamics = undefined,
-    haze: Haze = undefined,
+    haze: *Haze = undefined,
 
     pub fn init() !*MainScreen {
         const self = try p.allocator.create(MainScreen);
