@@ -7,6 +7,7 @@ const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
 
+const Haze = @import("Haze.zig");
 const SpriteArena = @import("sprite_arena.zig").SpriteArena;
 
 pub const panic = panic_handler.panic;
@@ -99,9 +100,12 @@ const MainScreen = struct {
     arena: SpriteArena,
     blimp: ?*p.LCDSprite = null,
     blimpState: BlimpDynamics = undefined,
+    haze: Haze = undefined,
 
-    pub fn init() !MainScreen {
-        var self = MainScreen{
+    pub fn init() !*MainScreen {
+        const self = try p.allocator.create(MainScreen);
+        errdefer p.allocator.destroy(self);
+        self.* = .{
             .arena = try SpriteArena.init(p.allocator),
         };
         errdefer self.arena.deinit();
@@ -117,6 +121,9 @@ const MainScreen = struct {
         const blimp = try self.arena.newSprite();
         errdefer self.arena.freeSprite(blimp);
         self.blimp = blimp;
+
+        self.haze = try Haze.init(&self.arena);
+        errdefer self.haze.deinit();
 
         const spawnX: f32 = @floatFromInt(spawnCoords[0]);
         const spawnY: f32 = @floatFromInt(spawnCoords[1]);
@@ -147,10 +154,14 @@ const MainScreen = struct {
         self.blimpState.x = x;
         self.blimpState.y = y;
         // self.blimpState.velX =
+
+        self.haze.update();
     }
 
     pub fn deinit(self: *MainScreen) void {
+        self.haze.deinit();
         self.arena.deinit();
+        p.allocator.destroy(self);
     }
 
     fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
@@ -317,7 +328,7 @@ fn loadWholeFile(alloc: std.mem.Allocator, path: [*c]const u8) ![]u8 {
 }
 
 const TopState = union(enum) {
-    main: MainScreen,
+    main: *MainScreen,
 
     pub fn init() !TopState {
         return .{ .main = try MainScreen.init() };
@@ -325,13 +336,13 @@ const TopState = union(enum) {
 
     pub fn deinit(self: *TopState) void {
         switch (self.*) {
-            .main => |*main| main.deinit(),
+            .main => |main| main.deinit(),
         }
     }
 
     pub fn update(self: *TopState) !void {
         switch (self.*) {
-            .main => |*main| try main.update(),
+            .main => |main| try main.update(),
         }
     }
 };
