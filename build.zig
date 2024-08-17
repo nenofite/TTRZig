@@ -2,6 +2,7 @@ const std = @import("std");
 
 const os_tag = @import("builtin").os.tag;
 const name = "example";
+
 pub fn build(b: *std.Build) !void {
     const pdx_file_name = name ++ ".pdx";
     const optimize = b.standardOptimizeOption(.{});
@@ -28,6 +29,17 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .target = b.host,
     });
+
+    // TODO does this need to be separate?
+    const lib_for_check = b.addSharedLibrary(.{
+        .name = "pdex",
+        .root_source_file = b.path("src/main.zig"),
+        .optimize = optimize,
+        .target = b.host,
+    });
+    const check = b.step("check", "Check if it compiles");
+    check.dependOn(&lib_for_check.step);
+
     _ = writer.addCopyFile(lib.getEmittedBin(), "pdex" ++ switch (os_tag) {
         .windows => ".dll",
         .macos => ".dylib",
