@@ -155,7 +155,7 @@ const MainScreen = struct {
         self.blimpState.y = y;
         // self.blimpState.velX =
 
-        self.haze.update();
+        self.haze.update(.{ @intFromFloat(x), @intFromFloat(y) });
     }
 
     pub fn deinit(self: *MainScreen) void {

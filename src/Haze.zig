@@ -64,21 +64,21 @@ pub fn deinit(self: *@This()) void {
     self.arena.freeSprite(self.sprite);
 }
 
-pub fn update(self: *@This()) void {
+pub fn update(self: *@This(), focus: [2]i32) void {
     const t = p.playdate.system.getCurrentTimeMilliseconds();
     const noiseOffset: f32 = @as(f32, @floatFromInt(t)) / 500;
     const flicker = perlin.noise(f32, .{ .x = noiseOffset }) * 0.1 + 0.9;
     const r = @as(i32, @intFromFloat(baseRadius * flicker));
-    self.drawImage(r);
+    self.drawImage(focus, r);
     p.playdate.sprite.markDirty(self.sprite);
 }
 
-fn drawImage(self: *@This(), r: i32) void {
+fn drawImage(self: *@This(), focus: [2]i32, r: i32) void {
     p.playdate.graphics.pushContext(self.spriteImg);
     defer p.playdate.graphics.popContext();
 
     p.playdate.graphics.fillRect(0, 0, p.WIDTH, p.HEIGHT, @intFromPtr(haze));
-    drawBubble(p.WIDTH / 2, p.HEIGHT / 2, r);
+    drawBubble(focus[0], focus[1], r);
 }
 
 // fn drawSprite(sprite: ?*p.LCDSprite, bounds: p.PDRect, drawrect: p.PDRect) callconv(.C) void {
