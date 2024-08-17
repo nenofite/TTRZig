@@ -55,7 +55,7 @@ fn deinit() void {
 
 const BlimpDynamics = struct {
     const neutralBallast = 500;
-    const tickSoundSpacing = 10;
+    const tickSoundSpacing = 20;
 
     x: f32,
     y: f32,
@@ -140,12 +140,13 @@ const MainScreen = struct {
         errdefer self.haze.deinit();
 
         self.ballastGauge = try Gauge.init(self.arena, .{
-            .cx = p.WIDTH - 10,
-            .cy = p.HEIGHT - 10,
+            .cx = 387,
+            .cy = 194,
             .maxAngle = 280,
-            .minAngle = 170,
-            .ticks = 5,
-            .radius = 30,
+            .minAngle = 80,
+            .ticks = 11,
+            .tickLength = 7,
+            .radius = 37,
             .zIndex = 10,
         });
         errdefer self.ballastGauge.deinit();

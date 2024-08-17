@@ -15,6 +15,7 @@ img: *p.LCDBitmap,
 baseImg: *p.LCDBitmap,
 
 ticks: u8,
+tickLength: i32,
 
 minAngle: f32,
 maxAngle: f32,
@@ -25,7 +26,8 @@ radius: i32,
 needleColor: p.LCDSolidColor = .ColorBlack,
 
 pub const Options = struct {
-    ticks: u8 = 8,
+    ticks: u8,
+    tickLength: i32,
     minAngle: f32,
     maxAngle: f32,
     cx: f32,
@@ -72,6 +74,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
         .img = img,
         .baseImg = baseImg,
         .ticks = options.ticks,
+        .tickLength = options.tickLength,
         .minAngle = options.minAngle,
         .maxAngle = options.maxAngle,
         .angle = startAngle,
@@ -137,7 +140,7 @@ fn drawBaseImg(self: *Gauge) void {
 
 fn drawTick(self: *Gauge, angle: f32) void {
     const center = self.radius;
-    const inner = polar(@as(f32, @floatFromInt(self.radius)) * 0.6, angle);
+    const inner = polar(@as(f32, @floatFromInt(self.radius - self.tickLength)), angle);
     const outer = polar(@as(f32, @floatFromInt(self.radius)), angle);
     p.playdate.graphics.drawLine(
         center + @as(i32, @intFromFloat(inner[0])),
