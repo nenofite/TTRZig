@@ -127,13 +127,13 @@ const MainScreen = struct {
         errdefer self.haze.deinit();
 
         self.ballastGauge = try Gauge.init(self.arena, .{
-            .cx = p.WIDTH - 160,
-            .cy = p.HEIGHT,
-            .maxAngle = 270 - 80,
-            .minAngle = 270 + 80,
+            .cx = p.WIDTH - 10,
+            .cy = p.HEIGHT - 10,
+            .maxAngle = 340,
+            .minAngle = 290,
             .ticks = 5,
             .radius = 30,
-            .zIndex = 5,
+            .zIndex = 10,
         });
         errdefer self.ballastGauge.deinit();
 

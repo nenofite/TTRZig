@@ -51,6 +51,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
     p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
     p.playdate.sprite.moveTo(sprite, options.cx, options.cy);
     p.playdate.sprite.setZIndex(sprite, options.zIndex);
+    p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
 
     self.* = .{
