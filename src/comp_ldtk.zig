@@ -51,12 +51,12 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     const mainLayer: *ldtk.LayerInstance = forLayer: {
         if (level.layerInstances) |layers| {
             for (layers) |*l| {
-                if (std.mem.eql(u8, l.__identifier, "AutoLayer")) {
+                if (l.autoLayerTiles.len > 0) {
                     break :forLayer l;
                 }
             }
         }
-        @panic("Could not find AutoLayer");
+        @panic("Could not find auto layer tiles");
     };
 
     var resultArr: std.ArrayList(u8) = std.ArrayList(u8).init(parentAlloc);
