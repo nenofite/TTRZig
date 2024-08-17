@@ -184,16 +184,28 @@ const MainScreen = struct {
         defer parser.deinit();
 
         // Spawn coords
-        if (!parser.maybe('S')) return error.NoSpawn;
-        if (!parser.maybe(' ')) return error.NoSpawn;
-        const spawnX = parser.number(i32) orelse return error.NoSpawn;
-        if (!parser.maybe(' ')) return error.NoSpawn;
-        const spawnY = parser.number(i32) orelse return error.NoSpawn;
-        if (!parser.maybe('\n')) return error.NoSpawn;
+        if (!parser.maybe('S')) return error.LoadLevel;
+        if (!parser.maybe(' ')) return error.LoadLevel;
+        const spawnX = parser.number(i32) orelse return error.LoadLevel;
+        if (!parser.maybe(' ')) return error.LoadLevel;
+        const spawnY = parser.number(i32) orelse return error.LoadLevel;
+        if (!parser.maybe('\n')) return error.LoadLevel;
 
         spawnCoords.* = .{ spawnX, spawnY };
 
-        const levelImg = p.playdate.graphics.newBitmap(p.WIDTH, p.HEIGHT, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse @panic("Can't make level bitmap");
+        // Level dimensions
+        if (!parser.maybe('X')) return error.LoadLevel;
+        if (!parser.maybe(' ')) return error.LoadLevel;
+        const levelWidth = parser.number(i32) orelse return error.LoadLevel;
+        if (!parser.maybe(' ')) return error.LoadLevel;
+        const levelHeight = parser.number(i32) orelse return error.LoadLevel;
+        if (!parser.maybe('\n')) return error.LoadLevel;
+
+        if (levelWidth <= 0 or levelHeight <= 0) {
+            p.fmtPanic("Bad level dimensions: {any} x {any}", .{ levelWidth, levelHeight });
+        }
+
+        const levelImg = p.playdate.graphics.newBitmap(levelWidth, levelHeight, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse @panic("Can't make level bitmap");
         errdefer p.playdate.graphics.freeBitmap(levelImg);
 
         const levelSprite = try self.arena.newSprite();

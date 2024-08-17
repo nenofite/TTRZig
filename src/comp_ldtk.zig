@@ -1,6 +1,8 @@
 const std = @import("std");
 const ldtk = @import("LDtk.zig");
 
+const targetLevel = "Level_1";
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
@@ -41,11 +43,11 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     defer root.deinit();
 
     const level: *ldtk.Level = forLevel: for (root.root.levels) |*l| {
-        if (std.mem.eql(u8, l.identifier, "Level_0")) {
+        if (std.mem.eql(u8, l.identifier, targetLevel)) {
             break :forLevel l;
         }
     } else {
-        @panic("Could not find Level_0");
+        @panic("Could not find " ++ targetLevel);
     };
 
     const mainLayer: *ldtk.LayerInstance = forLayer: {
@@ -65,6 +67,8 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
 
     const spawnPos = extractSpawnPosition(level);
     try resultWriter.print("S {any} {any}\n", .{ spawnPos[0], spawnPos[1] });
+
+    try resultWriter.print("X {any} {any}\n", .{ level.pxWid, level.pxHei });
 
     const wallIds = extractWallTileIDs(&root.root);
 
