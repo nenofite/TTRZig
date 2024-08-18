@@ -65,7 +65,7 @@ const BlimpDynamics = struct {
     ballast: i32 = neutralBallast,
     t: u32 = 0,
 
-    previousTickSound: i32 = neutralBallast,
+    ballastCrank: i32 = 0,
 
     pub fn update(self: *BlimpDynamics) void {
         self.t +%= 1;
@@ -76,13 +76,19 @@ const BlimpDynamics = struct {
 
         const crankChange = p.playdate.system.getCrankChange();
         const ballastChange: i32 = @intFromFloat(crankChange / 360 * 200);
-        self.ballast +|= ballastChange;
-        self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
-
-        if (@abs(self.ballast - self.previousTickSound) >= tickSoundSpacing) {
-            self.previousTickSound = self.ballast;
+        self.ballastCrank +|= ballastChange;
+        while (self.ballastCrank >= tickSoundSpacing) {
+            self.ballastCrank -|= tickSoundSpacing;
+            self.ballast +|= tickSoundSpacing;
             sounds.playOnce(sounds.click3);
         }
+        while (self.ballastCrank <= -tickSoundSpacing) {
+            self.ballastCrank +|= tickSoundSpacing;
+            self.ballast -|= tickSoundSpacing;
+            sounds.playOnce(sounds.click3);
+        }
+
+        self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
 
         const btns = p.getButtonState();
         if (btns.current.left) {
