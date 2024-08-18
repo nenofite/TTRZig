@@ -760,7 +760,7 @@
 		{
 			"__cWid": 15,
 			"__cHei": 15,
-			"identifier": "Dungeon_inv_8_8",
+			"identifier": "Dungeon",
 			"uid": 1,
 			"relPath": "../assets/images/dungeon-inv-table-8-8.png",
 			"embedAtlas": null,

@@ -102,7 +102,7 @@ fn extractSpawnPosition(level: *const ldtk.Level) [2]i64 {
 
 fn extractTileIDs(root: *const ldtk.Root, enumName: []const u8) []const i64 {
     for (root.defs.?.tilesets) |tileset| {
-        if (!std.mem.eql(u8, tileset.identifier, "Dungeon_inv_8_8")) {
+        if (!std.mem.eql(u8, tileset.identifier, "Dungeon")) {
             continue;
         }
 
