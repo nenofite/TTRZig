@@ -25,6 +25,8 @@ fn metaMake(comptime name: []const u8) *p.SamplePlayer {
 
 pub fn init() void {
     click3 = metaMake("click3");
+    p.playdate.sound.sampleplayer.setVolume(click3, 0.1, 0.1);
+
     coin = metaMake("coin");
 }
 
