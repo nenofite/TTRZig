@@ -56,7 +56,9 @@ fn deinit() void {
 
 const BlimpDynamics = struct {
     const neutralBallast = 500;
-    const tickSoundSpacing = 20;
+    const maxBallast = 2 * neutralBallast;
+    const ticks = 10;
+    const tickSoundSpacing = @divExact(maxBallast, ticks);
 
     x: f32,
     y: f32,
@@ -88,7 +90,7 @@ const BlimpDynamics = struct {
             sounds.playOnce(sounds.click3);
         }
 
-        self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
+        self.ballast = std.math.clamp(self.ballast, 0, maxBallast);
 
         const btns = p.getButtonState();
         if (btns.current.left) {
@@ -160,7 +162,7 @@ const MainScreen = struct {
             .cy = 194,
             .maxAngle = 280,
             .minAngle = 80,
-            .ticks = 11,
+            .ticks = BlimpDynamics.ticks + 1,
             .tickLength = 7,
             .radius = 37,
             .zIndex = 10,
