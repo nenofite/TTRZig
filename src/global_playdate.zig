@@ -148,6 +148,17 @@ pub const ButtonTracker = struct {
     }
 };
 
+pub fn moveWithCollisions(sprite: *pdapi.LCDSprite, x: *f32, y: *f32) ?[]pdapi.SpriteCollisionInfo {
+    var len: c_int = 0;
+    const arrayOpt = playdate.sprite.moveWithCollisions(sprite, x.*, y.*, x, y, &len);
+    if (arrayOpt) |array| {
+        const lenSz: usize = @intCast(len);
+        return array[0..lenSz];
+    } else {
+        return null;
+    }
+}
+
 fn markTime() ?u32 {
     const now: u32 = playdate.system.getCurrentTimeMilliseconds();
     const prevOpt = prevLogTime;

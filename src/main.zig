@@ -106,10 +106,14 @@ const BlimpDynamics = struct {
     }
 };
 
-fn alwaysSlide(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
+fn blimpCollisionResponse(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
     _ = self;
-    _ = other;
-    return .CollisionTypeSlide;
+    const otherTag = p.playdate.sprite.getTag(other.?);
+    if (otherTag == Coin.tag) {
+        return .CollisionTypeOverlap;
+    } else {
+        return .CollisionTypeSlide;
+    }
 }
 
 const MainScreen = struct {
@@ -170,7 +174,7 @@ const MainScreen = struct {
             .height = 18,
         });
         p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
-        p.playdate.sprite.setCollisionResponseFunction(blimp, alwaysSlide);
+        p.playdate.sprite.setCollisionResponseFunction(blimp, blimpCollisionResponse);
         p.playdate.sprite.addSprite(blimp);
         self.blimpState = .{ .x = spawnX, .y = spawnY };
 
@@ -184,15 +188,23 @@ const MainScreen = struct {
     pub fn update(self: *MainScreen) !void {
         const blimp = self.blimp.?;
         self.blimpState.update();
-        var x: f32 = 0;
-        var y: f32 = 0;
-        var len: c_int = 0;
-        const collisions = p.playdate.sprite.moveWithCollisions(blimp, self.blimpState.x, self.blimpState.y, &x, &y, &len);
-        if (collisions != null) _ = p.playdate.system.realloc(collisions, 0);
 
-        self.blimpState.x = x;
-        self.blimpState.y = y;
-        self.camera.update(x, y);
+        const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
+        if (collisionsOpt) |collisions| {
+            // defer p.allocator.free(collisions);
+            defer _ = p.playdate.system.realloc(collisions.ptr, 0);
+
+            for (collisions) |collision| {
+                const otherTag = p.playdate.sprite.getTag(collision.other.?);
+                if (otherTag == Coin.tag) {
+                    p.log("Got a coin!", .{});
+                    if (self.findCoinOfSprite(collision.other.?)) |coin| {
+                        self.removeCoin(coin);
+                    }
+                }
+            }
+        }
+        self.camera.update(self.blimpState.x, self.blimpState.y);
 
         self.ballastGauge.setFraction(self.blimpState.fraction());
         self.ballastGauge.update();
@@ -203,8 +215,8 @@ const MainScreen = struct {
 
         const offset = self.camera.setGraphicsOffset();
         self.haze.update(.{
-            @as(i32, @intFromFloat(x)) + offset[0],
-            @as(i32, @intFromFloat(y)) + offset[1],
+            @as(i32, @intFromFloat(self.blimpState.x)) + offset[0],
+            @as(i32, @intFromFloat(self.blimpState.y)) + offset[1],
         });
     }
 
@@ -348,6 +360,24 @@ const MainScreen = struct {
         p.playdate.sprite.moveTo(sprite, x, y);
         p.playdate.sprite.addSprite(sprite);
         return sprite;
+    }
+
+    fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
+        for (self.coins.items) |coin| {
+            if (coin.sprite == sprite) {
+                return coin;
+            }
+        }
+        return null;
+    }
+
+    fn removeCoin(self: *MainScreen, coin: *Coin) void {
+        if (std.mem.indexOfScalar(*Coin, self.coins.items, coin)) |idx| {
+            _ = self.coins.swapRemove(idx);
+        } else {
+            p.softFail("Coin not in list");
+        }
+        coin.deinit();
     }
 };
 
