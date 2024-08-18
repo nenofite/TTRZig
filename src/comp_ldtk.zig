@@ -1,7 +1,7 @@
 const std = @import("std");
 const ldtk = @import("LDtk.zig");
 
-const targetLevel = "Level_1";
+const targetLevel = "Level_0";
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -70,6 +70,12 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
 
     try resultWriter.print("X {any} {any}\n", .{ level.pxWid, level.pxHei });
 
+    const coins = try extractCoinPositions(alloc, level);
+    defer alloc.free(coins);
+    for (coins) |coin| {
+        try resultWriter.print("C {any} {any}\n", .{ coin[0], coin[1] });
+    }
+
     const wallIds = extractTileIDs(&root.root, "Wall");
     const skipIds = extractTileIDs(&root.root, "Skip");
 
@@ -98,6 +104,19 @@ fn extractSpawnPosition(level: *const ldtk.Level) [2]i64 {
         }
     }
     @panic("Did not find Spawn entity");
+}
+
+fn extractCoinPositions(alloc: std.mem.Allocator, level: *const ldtk.Level) ![][2]i64 {
+    var result = std.ArrayList([2]i64).init(alloc);
+    errdefer result.deinit();
+
+    for (level.layerInstances.?) |layer| {
+        for (layer.entityInstances) |entity| {
+            if (!std.mem.eql(u8, entity.__identifier, "Coin")) continue;
+            try result.append(entity.px);
+        }
+    }
+    return try result.toOwnedSlice();
 }
 
 fn extractTileIDs(root: *const ldtk.Root, enumName: []const u8) []const i64 {
