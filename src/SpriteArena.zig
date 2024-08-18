@@ -70,9 +70,8 @@ pub fn newChild(self: *SpriteArena) !*SpriteArena {
 
     child.parent = self;
 
-    const childSlot = try self.children.addOne();
+    try self.children.append(child);
     errdefer _ = self.children.pop();
-    childSlot.* = child;
 
     return child;
 }
