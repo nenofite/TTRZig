@@ -238,7 +238,7 @@ const MainScreen = struct {
             p.fmtPanic("Bad level dimensions: {any} x {any}", .{ levelWidth, levelHeight });
         }
 
-        const levelImg = p.playdate.graphics.newBitmap(levelWidth, levelHeight, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse @panic("Can't make level bitmap");
+        const levelImg = p.playdate.graphics.newBitmap(levelWidth, levelHeight, @intFromEnum(p.LCDSolidColor.ColorBlack)) orelse @panic("Can't make level bitmap");
         errdefer p.playdate.graphics.freeBitmap(levelImg);
 
         const levelSprite = try self.arena.newSprite();

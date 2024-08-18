@@ -70,11 +70,15 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
 
     try resultWriter.print("X {any} {any}\n", .{ level.pxWid, level.pxHei });
 
-    const wallIds = extractWallTileIDs(&root.root);
+    const wallIds = extractTileIDs(&root.root, "Wall");
+    const skipIds = extractTileIDs(&root.root, "Skip");
 
     for (mainLayer.autoLayerTiles) |tile| {
         const x = tile.px[0];
         const y = tile.px[1];
+        const shouldSkip = std.mem.indexOfScalar(i64, skipIds, tile.t) != null;
+        if (shouldSkip) continue;
+
         const isWall = std.mem.indexOfScalar(i64, wallIds, tile.t) != null;
         const wallToken = if (isWall) "W" else "_";
 
@@ -96,14 +100,14 @@ fn extractSpawnPosition(level: *const ldtk.Level) [2]i64 {
     @panic("Did not find Spawn entity");
 }
 
-fn extractWallTileIDs(root: *const ldtk.Root) []const i64 {
+fn extractTileIDs(root: *const ldtk.Root, enumName: []const u8) []const i64 {
     for (root.defs.?.tilesets) |tileset| {
         if (!std.mem.eql(u8, tileset.identifier, "Dungeon_inv_8_8")) {
             continue;
         }
 
         for (tileset.enumTags) |enumTag| {
-            if (!std.mem.eql(u8, enumTag.enumValueId, "Wall")) {
+            if (!std.mem.eql(u8, enumTag.enumValueId, enumName)) {
                 continue;
             }
 
