@@ -199,7 +199,7 @@ const MainScreen = struct {
                 if (otherTag == Coin.tag) {
                     p.log("Got a coin!", .{});
                     if (self.findCoinOfSprite(collision.other.?)) |coin| {
-                        self.removeCoin(coin);
+                        self.onHitCoin(coin);
                     }
                 }
             }
@@ -360,6 +360,11 @@ const MainScreen = struct {
         p.playdate.sprite.moveTo(sprite, x, y);
         p.playdate.sprite.addSprite(sprite);
         return sprite;
+    }
+
+    fn onHitCoin(self: *MainScreen, coin: *Coin) void {
+        sounds.playOnce(sounds.coin);
+        self.removeCoin(coin);
     }
 
     fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
