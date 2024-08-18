@@ -148,6 +148,7 @@ const MainScreen = struct {
             .tickLength = 7,
             .radius = 37,
             .zIndex = 10,
+            .heavyTicks = .{ .min = true, .mid = true, .max = true },
         });
         errdefer self.ballastGauge.deinit();
 

@@ -24,6 +24,13 @@ angle: f32,
 radius: i32,
 
 needleColor: p.LCDSolidColor = .ColorBlack,
+heavyTicks: HeavyTicks,
+
+pub const HeavyTicks = struct {
+    min: bool = true,
+    mid: bool = false,
+    max: bool = true,
+};
 
 pub const Options = struct {
     ticks: u8,
@@ -34,6 +41,7 @@ pub const Options = struct {
     cy: f32,
     radius: i32,
     zIndex: i16,
+    heavyTicks: HeavyTicks = .{},
 };
 
 pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
@@ -79,6 +87,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
         .maxAngle = options.maxAngle,
         .angle = startAngle,
         .radius = options.radius,
+        .heavyTicks = options.heavyTicks,
     };
 
     self.drawBaseImg();
@@ -128,17 +137,19 @@ fn drawBaseImg(self: *Gauge) void {
 
     if (self.ticks > 0) {
         const tickDelta = (self.maxAngle - self.minAngle) / @as(f32, @floatFromInt(self.ticks - 1));
+        const midIdx = @divTrunc(self.ticks, 2);
         for (1..self.ticks - 1) |t| {
-            self.drawTick(self.minAngle + @as(f32, @floatFromInt(t)) * tickDelta);
+            const heavy = self.heavyTicks.mid and t == midIdx;
+            self.drawTick(self.minAngle + @as(f32, @floatFromInt(t)) * tickDelta, heavy);
         }
-        self.drawTick(self.minAngle);
-        self.drawTick(self.maxAngle);
+        self.drawTick(self.minAngle, self.heavyTicks.min);
+        self.drawTick(self.maxAngle, self.heavyTicks.max);
     }
 
     self.drawFrame();
 }
 
-fn drawTick(self: *Gauge, angle: f32) void {
+fn drawTick(self: *Gauge, angle: f32, heavy: bool) void {
     const center = self.radius;
     const inner = polar(@as(f32, @floatFromInt(self.radius - self.tickLength)), angle);
     const outer = polar(@as(f32, @floatFromInt(self.radius)), angle);
@@ -147,7 +158,7 @@ fn drawTick(self: *Gauge, angle: f32) void {
         center + @as(i32, @intFromFloat(inner[1])),
         center + @as(i32, @intFromFloat(outer[0])),
         center + @as(i32, @intFromFloat(outer[1])),
-        1,
+        if (heavy) 3 else 1,
         @intCast(@intFromEnum(self.needleColor)),
     );
 }
