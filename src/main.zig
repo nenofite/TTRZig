@@ -75,7 +75,7 @@ const BlimpDynamics = struct {
         self.velY += @sin(@as(f32, @floatFromInt(self.t)) / 50 * 6) * 0.01;
 
         const crankChange = p.playdate.system.getCrankChange();
-        const ballastChange: i32 = @intFromFloat(crankChange / 360 * 100);
+        const ballastChange: i32 = @intFromFloat(crankChange / 360 * 200);
         self.ballast +|= ballastChange;
         self.ballast = std.math.clamp(self.ballast, 0, 2 * neutralBallast);
 
