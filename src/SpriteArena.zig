@@ -4,7 +4,7 @@ const tween = @import("tween.zig");
 
 const SpriteArena = @This();
 
-// alloc_inner: *TrackedAllocator,
+alloc_inner: TrackedAllocator,
 alloc: std.mem.Allocator,
 sprites: std.ArrayList(*p.LCDSprite),
 tweens: tween.List,
@@ -12,22 +12,28 @@ tweens: tween.List,
 parent: ?*SpriteArena = null,
 children: std.ArrayList(*SpriteArena),
 
-pub fn init(alloc: std.mem.Allocator) !*SpriteArena {
-    const self = try alloc.create(SpriteArena);
-    errdefer alloc.destroy(self);
-
-    const sprites = try std.ArrayList(*p.LCDSprite).initCapacity(alloc, 8);
-    errdefer sprites.deinit();
-
-    const tweens = try tween.List.init(alloc);
-    errdefer tweens.deinit();
+pub fn init(parentAlloc: std.mem.Allocator) !*SpriteArena {
+    const self = try parentAlloc.create(SpriteArena);
+    errdefer parentAlloc.destroy(self);
 
     self.* = .{
-        .alloc = alloc,
-        .sprites = sprites,
-        .tweens = tweens,
-        .children = std.ArrayList(*SpriteArena).init(alloc),
+        .alloc_inner = try TrackedAllocator.init(parentAlloc),
+        .alloc = undefined,
+        .sprites = undefined,
+        .tweens = undefined,
+        .children = undefined,
     };
+    const alloc = self.alloc_inner.allocator();
+    self.alloc = alloc;
+
+    self.children = std.ArrayList(*SpriteArena).init(alloc);
+    errdefer self.children.deinit();
+
+    self.sprites = try std.ArrayList(*p.LCDSprite).initCapacity(alloc, 8);
+    errdefer self.sprites.deinit();
+
+    self.tweens = try tween.List.init(alloc);
+    errdefer self.tweens.deinit();
 
     return self;
 }
@@ -41,6 +47,7 @@ fn deinitInner(self: *SpriteArena, skipParent: bool) void {
     for (self.children.items) |child| {
         child.deinitInner(true);
     }
+    self.children.deinit();
     for (self.sprites.items) |i| {
         p.playdate.sprite.freeSprite(i);
     }
@@ -48,6 +55,7 @@ fn deinitInner(self: *SpriteArena, skipParent: bool) void {
     if (!skipParent) if (self.parent) |parent| {
         parent.removeChild(self);
     };
+    self.alloc_inner.deinit();
     // self.arena.deinit();
 }
 
@@ -94,73 +102,94 @@ pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
     p.playdate.sprite.freeSprite(sprite);
 }
 
-// const TrackedAllocator = struct {
-//     const OpenList = std.DoublyLinkedList(*anyopaque);
+const TrackedAllocator = struct {
+    const OpenList = std.DoublyLinkedList([]u8);
 
-//     child: std.mem.Allocator,
-//     open: OpenList,
+    child: std.mem.Allocator,
+    open: OpenList,
 
-//     pub fn init(child: std.mem.Allocator) TrackedAllocator {
-//         return .{
-//             .child = child,
-//             .open = .{},
-//         };
-//     }
+    pub fn init(child: std.mem.Allocator) !TrackedAllocator {
+        return .{
+            .child = child,
+            .open = .{},
+        };
+    }
 
-//     pub fn deinit(self: *TrackedAllocator) void {
-//         var it = self.open.first;
-//         while (it) |node| {
-//             self.child.destroy(node.data);
-//             const ptr: [*]u8 = @ptrCast(@alignCast(node.data));
-//             self.child.rawFree(ptr[0..1], undefined, 0);
-//             it = node.next;
-//         }
-//     }
+    pub fn deinit(self: *TrackedAllocator) void {
+        // self.assertEmpty();
+        var it = self.open.first;
+        while (it) |node| {
+            const next = node.next;
+            self.open.remove(node);
+            self.child.rawFree(node.data, 0, 0);
+            self.child.destroy(node);
+            it = next;
+        }
+    }
 
-//     fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
-//         _ = ret_addr;
-//         const self: *TrackedAllocator = @ptrCast(@alignCast(ctx));
-//         // const ptr = self.child.alloc(u8, len) catch return null;
-//         const ptr = self.child.rawAlloc(len, ptr_align, 0) orelse return null;
-//         const slot = self.child.create(OpenList.Node) catch {
-//             self.child.rawFree(ptr[0..len], ptr_align, 0);
-//             // self.child.free(ptr);
-//             return null;
-//         };
-//         slot.data = @ptrCast(ptr);
-//         self.open.append(slot);
-//         return ptr;
-//     }
+    pub fn assertEmpty(self: *const TrackedAllocator) void {
+        if (self.open.first == null) return;
+        p.fmtPanic("Arena contains {any} non-freed blocks", .{self.open.len});
+    }
 
-//     fn resize(ctx: *anyopaque, buf: []u8, buf_align: u8, new_len: usize, ret_addr: usize) bool {
-//         const self: *TrackedAllocator = @ptrCast(@alignCast(ctx));
-//         return self.child.rawResize(buf, buf_align, new_len, ret_addr);
-//     }
+    fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
+        _ = ret_addr;
+        const self: *TrackedAllocator = @ptrCast(@alignCast(ctx));
+        const ptr = self.child.rawAlloc(len, ptr_align, 0) orelse return null;
+        const slice = ptr[0..len];
+        const slot = self.child.create(OpenList.Node) catch {
+            self.child.rawFree(slice, ptr_align, 0);
+            return null;
+        };
+        slot.data = slice;
+        self.open.append(slot);
+        return ptr;
+    }
 
-//     fn free(ctx: *anyopaque, buf: []u8, buf_align: u8, ret_addr: usize) void {
-//         const self: *TrackedAllocator = @ptrCast(@alignCast(ctx));
-//         var it = self.open.first;
-//         while (it) |node| {
-//             if (node.data == buf.ptr) {
-//                 self.open.remove(node);
-//                 self.child.destroy(node);
-//                 break;
-//             }
-//             it = node.next;
-//         } else {
-//             @panic("Freed something not in allocator");
-//         }
-//         self.child.rawFree(buf, buf_align, ret_addr);
-//     }
+    fn resize(ctx: *anyopaque, buf: []u8, buf_align: u8, new_len: usize, ret_addr: usize) bool {
+        _ = ret_addr;
 
-//     pub fn allocator(self: *TrackedAllocator) std.mem.Allocator {
-//         return .{
-//             .ptr = @ptrCast(self),
-//             .vtable = &.{
-//                 .alloc = alloc,
-//                 .resize = resize,
-//                 .free = free,
-//             },
-//         };
-//     }
-// };
+        const self: *TrackedAllocator = @ptrCast(@alignCast(ctx));
+        const node = self.findNode(buf) orelse @panic("Resized something not in allocator");
+        if (self.child.rawResize(buf, buf_align, new_len, 0)) {
+            node.data = buf.ptr[0..new_len];
+            p.log("Successfully resized {any} to {any}", .{ buf.len, new_len });
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fn free(ctx: *anyopaque, buf: []u8, buf_align: u8, ret_addr: usize) void {
+        const self: *TrackedAllocator = @ptrCast(@alignCast(ctx));
+        const node = self.findNode(buf) orelse @panic("Freed something not in allocator");
+        self.open.remove(node);
+        self.child.destroy(node);
+        self.child.rawFree(buf, buf_align, ret_addr);
+    }
+
+    fn findNode(self: *const TrackedAllocator, buf: []u8) ?*OpenList.Node {
+        var it = self.open.first;
+        while (it) |node| {
+            if (node.data.ptr == buf.ptr) {
+                if (node.data.len != buf.len) {
+                    // hmm
+                }
+                return node;
+            }
+            it = node.next;
+        }
+        return null;
+    }
+
+    pub fn allocator(self: *TrackedAllocator) std.mem.Allocator {
+        return .{
+            .ptr = @ptrCast(self),
+            .vtable = &.{
+                .alloc = alloc,
+                .resize = resize,
+                .free = free,
+            },
+        };
+    }
+};
