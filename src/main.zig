@@ -12,6 +12,7 @@ const SpriteArena = @import("SpriteArena.zig");
 const Camera = @import("Camera.zig");
 const Gauge = @import("Gauge.zig");
 const Coin = @import("Coin.zig");
+const Score = @import("Score.zig");
 
 pub const panic = panic_handler.panic;
 
@@ -132,6 +133,7 @@ const MainScreen = struct {
     camera: Camera = undefined,
     ballastGauge: *Gauge = undefined,
     coins: std.ArrayList(*Coin),
+    score: *Score = undefined,
 
     pub fn init() !*MainScreen {
         const arena = try SpriteArena.init(p.allocator);
@@ -156,6 +158,9 @@ const MainScreen = struct {
 
         self.haze = try Haze.init(self.arena);
         errdefer self.haze.deinit();
+
+        self.score = try Score.init(arena);
+        errdefer self.score.deinit();
 
         self.ballastGauge = try Gauge.init(self.arena, .{
             .cx = 387,
@@ -232,6 +237,7 @@ const MainScreen = struct {
         const arena = self.arena;
         self.haze.deinit();
         self.ballastGauge.deinit();
+        self.score.deinit();
         self.deinitAllCoins();
         arena.alloc.destroy(self);
         arena.deinit();
@@ -373,6 +379,7 @@ const MainScreen = struct {
     fn onHitCoin(self: *MainScreen, coin: *Coin) void {
         sounds.playOnce(sounds.coin);
         self.removeCoin(coin);
+        self.score +|= 1;
     }
 
     fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
