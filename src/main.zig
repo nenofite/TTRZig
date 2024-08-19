@@ -232,7 +232,7 @@ const MainScreen = struct {
         const arena = self.arena;
         self.haze.deinit();
         self.ballastGauge.deinit();
-        self.coins.deinit();
+        self.deinitAllCoins();
         arena.alloc.destroy(self);
         arena.deinit();
     }
@@ -460,9 +460,12 @@ fn loadWholeFile(alloc: std.mem.Allocator, path: [*c]const u8) ![]u8 {
     defer _ = p.playdate.file.close(file);
     const buf = try alloc.alloc(u8, 1024 * 1024);
     errdefer alloc.free(buf);
-    const actualLen = p.playdate.file.read(file, buf.ptr, @intCast(buf.len));
-    if (actualLen <= 0) return error.FileEmpty;
-    return buf[0..@intCast(actualLen)];
+    const actualLenRaw = p.playdate.file.read(file, buf.ptr, @intCast(buf.len));
+    if (actualLenRaw <= 0) return error.FileEmpty;
+
+    const actualLen: usize = @intCast(actualLenRaw);
+
+    return try alloc.realloc(buf, actualLen);
 }
 
 const TopState = union(enum) {

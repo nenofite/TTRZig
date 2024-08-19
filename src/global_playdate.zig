@@ -195,17 +195,13 @@ const alloc_impl = struct {
         _ = buf;
         _ = new_len;
         return false;
-
-        // const new_ptr = playdate.system.realloc(buf.ptr, new_len) orelse return false;
-        // log("realloc: {any} vs {any}", .{ buf.ptr, new_ptr });
-        // // std.debug.assert(@intFromPtr(new_ptr) == @intFromPtr(buf.ptr));
-        // return true;
     }
 
     fn free(ctx: *anyopaque, buf: []u8, buf_align: u8, ret_addr: usize) void {
         _ = ctx;
         _ = buf_align;
         _ = ret_addr;
+        @memset(buf, undefined);
         _ = playdate.system.realloc(buf.ptr, 0);
     }
 
