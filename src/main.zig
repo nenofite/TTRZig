@@ -379,7 +379,7 @@ const MainScreen = struct {
     fn onHitCoin(self: *MainScreen, coin: *Coin) void {
         sounds.playOnce(sounds.coin);
         self.removeCoin(coin);
-        self.score +|= 1;
+        self.score.score +|= 1;
     }
 
     fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
