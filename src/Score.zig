@@ -8,11 +8,14 @@ const SpriteArena = @import("SpriteArena.zig");
 
 const Score = @This();
 
+const digits = 3;
+const digitSize = 20;
+
 arena: *SpriteArena,
 sprite: *p.LCDSprite,
 
 score: u32 = 0,
-prevScore: u32 = 0,
+scoreF: f32 = 0,
 
 pub fn init(parentArena: *SpriteArena) !*Score {
     const arena = try parentArena.newChild();
@@ -26,7 +29,7 @@ pub fn init(parentArena: *SpriteArena) !*Score {
 
     p.playdate.sprite.setCenter(sprite, 1, 0);
     p.playdate.sprite.moveTo(sprite, p.WIDTH, p.HEIGHT / 2);
-    p.playdate.sprite.setSize(sprite, 30, 16);
+    p.playdate.sprite.setSize(sprite, 3 * digitSize, digitSize);
     p.playdate.sprite.setZIndex(sprite, 9);
     p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
@@ -49,26 +52,23 @@ pub fn deinit(self: *Score) void {
 }
 
 pub fn update(self: *Score) void {
-    if (self.score == self.prevScore) return;
-    self.prevScore = self.score;
+    self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.9);
     p.playdate.sprite.markDirty(self.sprite);
+}
+
+fn drawDigit(x: i32, y: i32, digit: f32) void {
+    const img = images.digits;
+    p.playdate.graphics.setClipRect(x, y, digitSize, digitSize);
+    defer p.playdate.graphics.clearClipRect();
+    p.playdate.graphics.drawBitmap(img, x, y + @as(i32, @intFromFloat(digit * -digitSize)), .BitmapUnflipped);
 }
 
 fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.C) void {
     const self: *Score = @alignCast(@ptrCast(p.playdate.sprite.getUserdata(sprite.?).?));
 
-    var textBuf = [1]u8{0} ** 8;
-    const text = std.fmt.bufPrintZ(&textBuf, "{d:0>3}", .{self.score}) catch "999";
+    const x: i32 = @intFromFloat(bounds.x);
+    const y: i32 = @intFromFloat(bounds.y);
 
-    // _ = bounds;
-    // p.playdate.graphics.fillRect(
-    //     @intFromFloat(bounds.x),
-    //     @intFromFloat(bounds.y),
-    //     @intFromFloat(bounds.width),
-    //     @intFromFloat(bounds.height),
-    //     @intFromEnum(p.LCDSolidColor.ColorWhite),
-    // );
-    // p.playdate.graphics.clear(@intFromEnum(p.LCDSolidColor.ColorWhite));
     p.playdate.graphics.fillRect(
         @intFromFloat(bounds.x),
         @intFromFloat(bounds.y),
@@ -83,13 +83,12 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         @intFromFloat(bounds.height - 2),
         @intFromEnum(p.LCDSolidColor.ColorBlack),
     );
-    // p.playdate.graphics.clear(@intFromPtr(&pat.brick_1));
-    p.playdate.graphics.setFont(images.geo);
-    _ = p.playdate.graphics.drawText(
-        text.ptr,
-        text.len,
-        .UTF8Encoding,
-        @intFromFloat(bounds.x + 4),
-        @intFromFloat(bounds.y),
-    );
+    var remaining = self.scoreF;
+    var digitX = x + (digits - 1) * digitSize;
+    for (0..digits) |_| {
+        const digit = @mod(remaining, 10);
+        drawDigit(digitX, y, digit);
+        remaining /= 10;
+        digitX -= digitSize;
+    }
 }
