@@ -72,13 +72,15 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
 
     const coins = try extractCoinPositions(alloc, level);
     defer alloc.free(coins);
+    try resultWriter.print("C\n", .{});
     for (coins) |coin| {
-        try resultWriter.print("C {any} {any}\n", .{ coin[0], coin[1] });
+        try resultWriter.print("{any} {any}\n", .{ coin[0], coin[1] });
     }
 
     const wallIds = extractTileIDs(&root.root, "Wall");
     const skipIds = extractTileIDs(&root.root, "Skip");
 
+    _ = try resultWriter.write("T\n");
     for (mainLayer.autoLayerTiles) |tile| {
         const x = tile.px[0];
         const y = tile.px[1];
