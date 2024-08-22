@@ -78,7 +78,7 @@ const BlimpDynamics = struct {
         self.velY += @sin(@as(f32, @floatFromInt(self.t)) / 50 * 6) * 0.01;
 
         const crankChange = p.playdate.system.getCrankChange();
-        const ballastChange: i32 = @intFromFloat(crankChange / 360 * 200);
+        const ballastChange: i32 = @intFromFloat(crankChange / 360 * neutralBallast);
         self.ballastCrank +|= ballastChange;
         while (self.ballastCrank >= tickSoundSpacing) {
             self.ballastCrank -|= tickSoundSpacing;
