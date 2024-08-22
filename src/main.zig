@@ -208,12 +208,10 @@ const MainScreen = struct {
         self.blimpState.update();
 
         if (p.isButtonJustPressed(p.BUTTON_UP)) {
-            // self.score.score *= 10;
-            self.score.score += 1;
+            const bump = p.random.intRangeAtMostBiased(u32, 10, 70);
+            self.score.score +|= bump;
         }
 
-        // self.score.score +%= 1;
-        // if (self.score.score > 999) self.score.score = 0;
         self.score.update();
 
         const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);

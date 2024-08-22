@@ -53,7 +53,6 @@ pub fn deinit(self: *Score) void {
 
 pub fn update(self: *Score) void {
     self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
-    p.log("s: {}", .{self.scoreF});
     p.playdate.sprite.markDirty(self.sprite);
 }
 
@@ -77,13 +76,6 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         @intFromFloat(bounds.height),
         @intFromEnum(p.LCDSolidColor.ColorWhite),
     );
-    p.playdate.graphics.drawRect(
-        @intFromFloat(bounds.x + 1),
-        @intFromFloat(bounds.y + 1),
-        @intFromFloat(bounds.width - 2),
-        @intFromFloat(bounds.height - 2),
-        @intFromEnum(p.LCDSolidColor.ColorBlack),
-    );
     var digits = [1]f32{0} ** numDigits;
     digitRoll(self.scoreF, &digits);
     var digitX = x + (numDigits - 1) * digitSize;
@@ -91,6 +83,13 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         drawDigit(digitX, y, digit);
         digitX -= digitSize;
     }
+    p.playdate.graphics.drawRect(
+        @intFromFloat(bounds.x + 1),
+        @intFromFloat(bounds.y + 1),
+        @intFromFloat(bounds.width - 2),
+        @intFromFloat(bounds.height - 2),
+        @intFromEnum(p.LCDSolidColor.ColorBlack),
+    );
 }
 
 fn digitRoll(original: f32, digitsLE: []f32) void {
