@@ -184,6 +184,8 @@ const alloc_impl = struct {
         _ = ret_addr;
         const raw = playdate.system.realloc(null, len) orelse return null;
         const u8raw: [*]u8 = @ptrCast(@alignCast(raw));
+        const buf = u8raw[0..len];
+        @memset(buf, undefined);
         return u8raw;
     }
 

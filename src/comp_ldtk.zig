@@ -70,11 +70,18 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
 
     try resultWriter.print("X {any} {any}\n", .{ level.pxWid, level.pxHei });
 
-    const coins = try extractCoinPositions(alloc, level);
+    const coins = try extractEntityPositions(alloc, "Coin", level);
     defer alloc.free(coins);
     try resultWriter.print("C\n", .{});
     for (coins) |coin| {
         try resultWriter.print("{any} {any}\n", .{ coin[0], coin[1] });
+    }
+
+    const arrows = try extractEntityPositions(alloc, "Arrow", level);
+    defer alloc.free(arrows);
+    try resultWriter.print("A\n", .{});
+    for (arrows) |arrow| {
+        try resultWriter.print("{any} {any}\n", .{ arrow[0], arrow[1] });
     }
 
     const wallIds = extractTileIDs(&root.root, "Wall");
@@ -108,13 +115,13 @@ fn extractSpawnPosition(level: *const ldtk.Level) [2]i64 {
     @panic("Did not find Spawn entity");
 }
 
-fn extractCoinPositions(alloc: std.mem.Allocator, level: *const ldtk.Level) ![][2]i64 {
+fn extractEntityPositions(alloc: std.mem.Allocator, name: []const u8, level: *const ldtk.Level) ![][2]i64 {
     var result = std.ArrayList([2]i64).init(alloc);
     errdefer result.deinit();
 
     for (level.layerInstances.?) |layer| {
         for (layer.entityInstances) |entity| {
-            if (!std.mem.eql(u8, entity.__identifier, "Coin")) continue;
+            if (!std.mem.eql(u8, entity.__identifier, name)) continue;
             try result.append(entity.px);
         }
     }

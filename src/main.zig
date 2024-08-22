@@ -7,6 +7,7 @@ const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
 
+const Arrow = @import("Arrow.zig");
 const Haze = @import("Haze.zig");
 const SpriteArena = @import("SpriteArena.zig");
 const Camera = @import("Camera.zig");
@@ -134,6 +135,7 @@ const MainScreen = struct {
     camera: Camera = undefined,
     ballastGauge: *Gauge = undefined,
     coins: std.ArrayList(*Coin),
+    arrows: std.ArrayList(*Arrow),
     score: *Score = undefined,
 
     pub fn init() !*MainScreen {
@@ -146,8 +148,9 @@ const MainScreen = struct {
         self.* = .{
             .arena = arena,
             .coins = std.ArrayList(*Coin).init(arena.alloc),
+            .arrows = std.ArrayList(*Arrow).init(arena.alloc),
         };
-        errdefer self.deinitAllCoins();
+        errdefer self.deinitAllEntities();
 
         var spawnCoords = [2]i32{ 0, 0 };
         const level = try self.loadLevel(&spawnCoords);
@@ -227,6 +230,10 @@ const MainScreen = struct {
             coin.update();
         }
 
+        for (self.arrows.items) |arrow| {
+            arrow.update();
+        }
+
         const offset = self.camera.setGraphicsOffset();
         self.haze.update(.{
             @as(i32, @intFromFloat(self.blimpState.x)) + offset[0],
@@ -239,18 +246,21 @@ const MainScreen = struct {
         self.haze.deinit();
         self.ballastGauge.deinit();
         self.score.deinit();
-        self.deinitAllCoins();
+        self.deinitAllEntities();
         arena.alloc.destroy(self);
         arena.deinit();
     }
 
-    fn deinitAllCoins(self: *MainScreen) void {
-        const coins = self.coins.toOwnedSlice() catch @panic("Couldn't take coins slice");
-        defer self.arena.alloc.free(coins);
-
-        for (coins) |coin| {
+    fn deinitAllEntities(self: *MainScreen) void {
+        for (self.coins.items) |coin| {
             coin.deinit();
         }
+        self.coins.clearAndFree();
+
+        for (self.arrows.items) |arrow| {
+            arrow.deinit();
+        }
+        self.arrows.clearAndFree();
     }
 
     fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
@@ -280,6 +290,12 @@ const MainScreen = struct {
         const coinSection = parser.section('C', struct { x: i32, y: i32 }) orelse return error.LoadLevel;
         while (coinSection.next()) |coin| {
             _ = try self.addCoin(coin.x, coin.y);
+        }
+
+        // Arrows
+        const arrowSection = parser.section('A', struct { x: i32, y: i32 }) orelse return error.LoadLevel;
+        while (arrowSection.next()) |arrow| {
+            _ = try self.addArrow(arrow.x, arrow.y);
         }
 
         const levelImg = p.playdate.graphics.newBitmap(dims.width, dims.height, @intFromEnum(p.LCDSolidColor.ColorBlack)) orelse @panic("Can't make level bitmap");
@@ -337,6 +353,16 @@ const MainScreen = struct {
         errdefer _ = self.coins.pop();
 
         return coin;
+    }
+
+    fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {
+        const arrow = try Arrow.init(self.arena, @floatFromInt(x), @floatFromInt(y));
+        errdefer arrow.deinit();
+
+        try self.arrows.append(arrow);
+        errdefer _ = self.arrows.pop();
+
+        return arrow;
     }
 
     fn addEmptyCollisionSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
