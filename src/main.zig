@@ -190,6 +190,7 @@ const MainScreen = struct {
             .width = 19,
             .height = 18,
         });
+        p.playdate.sprite.setZIndex(blimp, 2);
         p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
         p.playdate.sprite.setCollisionResponseFunction(blimp, blimpCollisionResponse);
         p.playdate.sprite.addSprite(blimp);
