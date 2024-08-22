@@ -207,8 +207,8 @@ const MainScreen = struct {
         const blimp = self.blimp.?;
         self.blimpState.update();
 
-        self.score.score +%= 1;
-        if (self.score.score > 999) self.score.score = 0;
+        // self.score.score +%= 1;
+        // if (self.score.score > 999) self.score.score = 0;
         self.score.update();
 
         const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);

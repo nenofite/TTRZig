@@ -86,9 +86,19 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
     var remaining = self.scoreF;
     var digitX = x + (digits - 1) * digitSize;
     for (0..digits) |_| {
-        const digit = @mod(remaining, 10);
+        const digit = digitRoll(remaining);
         drawDigit(digitX, y, digit);
         remaining /= 10;
         digitX -= digitSize;
+    }
+}
+
+fn digitRoll(ones: f32) f32 {
+    const digit = @trunc(@mod(ones, 10));
+    const sub = @mod(ones * 10, 10);
+    if (sub > 9) {
+        return digit + sub / 10;
+    } else {
+        return digit;
     }
 }
