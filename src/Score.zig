@@ -8,7 +8,7 @@ const SpriteArena = @import("SpriteArena.zig");
 
 const Score = @This();
 
-const digits = 3;
+const numDigits = 3;
 const digitSize = 20;
 
 arena: *SpriteArena,
@@ -52,15 +52,7 @@ pub fn deinit(self: *Score) void {
 }
 
 pub fn update(self: *Score) void {
-    const step = 1.0 / @as(comptime_float, @floatFromInt(tween.framerate));
-    const distance = @as(f32, @floatFromInt(self.score)) - self.scoreF;
-    if (@abs(distance) <= step) {
-        self.scoreF = @floatFromInt(self.score);
-    } else if (distance > 0) {
-        self.scoreF += step;
-    } else {
-        self.scoreF -= step;
-    }
+    self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
     p.log("s: {}", .{self.scoreF});
     p.playdate.sprite.markDirty(self.sprite);
 }
@@ -92,23 +84,28 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         @intFromFloat(bounds.height - 2),
         @intFromEnum(p.LCDSolidColor.ColorBlack),
     );
-    const sub = @mod(self.scoreF * 10, 10);
-    var hereDigit = self.scoreF;
-    var digitX = x + (digits - 1) * digitSize;
-    for (0..digits) |i| {
-        const digit = digitRoll(hereDigit, sub, i == 0);
+    var digits = [1]f32{0} ** numDigits;
+    digitRoll(self.scoreF, &digits);
+    var digitX = x + (numDigits - 1) * digitSize;
+    for (digits) |digit| {
         drawDigit(digitX, y, digit);
-        hereDigit /= 10;
         digitX -= digitSize;
     }
 }
 
-fn digitRoll(ones: f32, sub: f32, isOnes: bool) f32 {
-    const digit = @trunc(@mod(ones, 10));
-    const hereSub = @mod(ones * 10, 10);
-    if (isOnes or hereSub > 9) {
-        return digit + sub / 10;
-    } else {
-        return digit;
+fn digitRoll(original: f32, digitsLE: []f32) void {
+    // First place flat digits
+    var divided = original;
+    for (digitsLE) |*digit| {
+        digit.* = @trunc(@mod(divided, 10));
+        divided /= 10;
+    }
+    // Now go from least to most significant adding roll
+    const sub = @mod(original * 10, 10) / 10;
+    for (digitsLE) |*digit| {
+        digit.* += sub;
+        if (digit.* < 9) {
+            break;
+        }
     }
 }
