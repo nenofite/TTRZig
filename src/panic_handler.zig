@@ -12,14 +12,11 @@ pub fn panic(
     error_return_trace: ?*std.builtin.StackTrace,
     return_address: ?usize,
 ) noreturn {
-    // _ = error_return_trace;
+    _ = error_return_trace;
     _ = return_address;
 
-    var stackBuf = [1]u8{0} ** 512;
-    const stack = if (error_return_trace) |trace| miniStack(&stackBuf, trace) else "(no trace)";
-
     var msgFmt = [1]u8{0} ** 512;
-    _ = std.fmt.bufPrintZ(msgFmt[0 .. msgFmt.len - 1], "{s}\n{s}", .{ msg, stack }) catch {};
+    _ = std.fmt.bufPrintZ(msgFmt[0 .. msgFmt.len - 1], "{s}", .{msg}) catch {};
 
     switch (comptime builtin.os.tag) {
         .freestanding => {
@@ -37,43 +34,9 @@ pub fn panic(
             global_playate.system.@"error"("PANIC: %s\n", &msgFmt);
         },
         else => {
-            // std.builtin.default_panic(msg, error_return_trace, return_address);
             while (true) global_playate.system.@"error"("PANIC: %s\n", &msgFmt);
         },
     }
 
     while (true) {}
-}
-
-fn miniStack(buf: []u8, stack_trace: *std.builtin.StackTrace) []const u8 {
-    var stream = std.io.fixedBufferStream(buf);
-    var writer = stream.writer();
-
-    attempt: {
-        if (builtin.strip_debug_info) {
-            return "Unable to dump stack trace: debug info stripped\n";
-        }
-        const debug_info = std.debug.getSelfDebugInfo() catch |err| {
-            writer.print("Unable to dump stack trace: Unable to open debug info: {s}\n", .{@errorName(err)}) catch break :attempt;
-            break :attempt;
-        };
-
-        var frame_index: usize = 0;
-        var frames_left: usize = @min(stack_trace.index, stack_trace.instruction_addresses.len);
-
-        while (frames_left != 0) : ({
-            frames_left -= 1;
-            frame_index = (frame_index + 1) % stack_trace.instruction_addresses.len;
-        }) {
-            const return_address = stack_trace.instruction_addresses[frame_index];
-            std.debug.printSourceAtAddress(debug_info, writer, return_address - 1, .no_color) catch break :attempt;
-        }
-
-        if (stack_trace.index > stack_trace.instruction_addresses.len) {
-            const dropped_frames = stack_trace.index - stack_trace.instruction_addresses.len;
-            writer.print("({d} additional stack frames skipped...)\n", .{dropped_frames}) catch break :attempt;
-        }
-    }
-
-    return stream.getWritten();
 }
