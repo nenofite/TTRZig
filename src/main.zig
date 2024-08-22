@@ -207,6 +207,10 @@ const MainScreen = struct {
         const blimp = self.blimp.?;
         self.blimpState.update();
 
+        // if (p.isButtonJustPressed(p.BUTTON_UP)) {
+        self.score.score += 1;
+        // }
+
         // self.score.score +%= 1;
         // if (self.score.score > 999) self.score.score = 0;
         self.score.update();

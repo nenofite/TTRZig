@@ -52,7 +52,16 @@ pub fn deinit(self: *Score) void {
 }
 
 pub fn update(self: *Score) void {
-    self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.9);
+    const step = 1.0 / @as(comptime_float, @floatFromInt(tween.framerate));
+    const distance = @as(f32, @floatFromInt(self.score)) - self.scoreF;
+    if (@abs(distance) <= step) {
+        self.scoreF = @floatFromInt(self.score);
+    } else if (distance > 0) {
+        self.scoreF += step;
+    } else {
+        self.scoreF -= step;
+    }
+    p.log("s: {}", .{self.scoreF});
     p.playdate.sprite.markDirty(self.sprite);
 }
 
@@ -83,20 +92,21 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         @intFromFloat(bounds.height - 2),
         @intFromEnum(p.LCDSolidColor.ColorBlack),
     );
-    var remaining = self.scoreF;
+    const sub = @mod(self.scoreF * 10, 10);
+    var hereDigit = self.scoreF;
     var digitX = x + (digits - 1) * digitSize;
-    for (0..digits) |_| {
-        const digit = digitRoll(remaining);
+    for (0..digits) |i| {
+        const digit = digitRoll(hereDigit, sub, i == 0);
         drawDigit(digitX, y, digit);
-        remaining /= 10;
+        hereDigit /= 10;
         digitX -= digitSize;
     }
 }
 
-fn digitRoll(ones: f32) f32 {
+fn digitRoll(ones: f32, sub: f32, isOnes: bool) f32 {
     const digit = @trunc(@mod(ones, 10));
-    const sub = @mod(ones * 10, 10);
-    if (sub > 9) {
+    const hereSub = @mod(ones * 10, 10);
+    if (isOnes or hereSub > 9) {
         return digit + sub / 10;
     } else {
         return digit;
