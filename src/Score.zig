@@ -3,6 +3,7 @@ const p = @import("global_playdate.zig");
 const tween = @import("tween.zig");
 const pat = @import("pattern.zig");
 const images = @import("images.zig");
+const sounds = @import("sounds.zig");
 
 const SpriteArena = @import("SpriteArena.zig");
 
@@ -52,7 +53,11 @@ pub fn deinit(self: *Score) void {
 }
 
 pub fn update(self: *Score) void {
+    const prevScoreF = self.scoreF;
     self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
+    if (@round(prevScoreF) < @round(self.scoreF)) {
+        sounds.playOnceVaried(sounds.score, 0.025);
+    }
     p.playdate.sprite.markDirty(self.sprite);
 }
 
