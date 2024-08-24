@@ -206,12 +206,6 @@ const MainScreen = struct {
     pub fn update(self: *MainScreen) !void {
         const blimp = self.blimp.?;
         self.blimpState.update();
-
-        if (p.isButtonJustPressed(p.BUTTON_UP)) {
-            const bump = p.random.intRangeAtMostBiased(u32, 10, 70);
-            self.score.score +|= bump;
-        }
-
         self.score.update();
 
         const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
@@ -393,7 +387,7 @@ const MainScreen = struct {
     fn onHitCoin(self: *MainScreen, coin: *Coin) void {
         sounds.playOnce(sounds.coin);
         self.removeCoin(coin);
-        self.score.score +|= 1;
+        self.score.score +|= 5;
     }
 
     fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
