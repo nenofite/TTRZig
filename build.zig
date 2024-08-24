@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const os_tag = @import("builtin").os.tag;
-const name = "example";
+const name = "ttrz";
 
 pub fn build(b: *std.Build) !void {
     const pdx_file_name = name ++ ".pdx";
