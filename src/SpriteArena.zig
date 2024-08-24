@@ -102,6 +102,50 @@ pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
     p.playdate.sprite.freeSprite(sprite);
 }
 
+pub const AnyNode = struct {
+    head: *anyopaque,
+    vtable: VTable,
+
+    pub fn update(self: AnyNode) void {
+        self.vtable.update(self.head);
+    }
+
+    pub fn deinit(self: AnyNode) void {
+        self.vtable.deinit(self.head);
+    }
+
+    const VTable = struct {
+        update: *const fn (ctx: *anyopaque) void,
+        deinit: *const fn (ctx: *anyopaque) void,
+    };
+};
+
+pub fn Node(comptime Head: type) type {
+    return struct {
+        head: Head,
+        arena: *SpriteArena,
+        parent: ?*AnyNode,
+
+        pub fn asAny(self: *@This()) AnyNode {
+            return .{
+                .head = &self.head,
+                .vtable = .{
+                    .update = updateVirt,
+                    .deinit = deinitVirt,
+                },
+            };
+        }
+
+        fn updateVirt(ctx: *anyopaque) void {
+            Head.update(@alignCast(@ptrCast(ctx)));
+        }
+
+        fn deinitVirt(ctx: *anyopaque) void {
+            Head.deinit(@alignCast(@ptrCast(ctx)));
+        }
+    };
+}
+
 const TrackedAllocator = struct {
     const OpenList = std.DoublyLinkedList([]u8);
 
