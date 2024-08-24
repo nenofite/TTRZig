@@ -20,16 +20,18 @@ fn make(path: [*c]const u8) !*p.SamplePlayer {
     return player;
 }
 
-fn metaMake(comptime name: []const u8) *p.SamplePlayer {
-    return make("sounds/" ++ name) catch @panic("Could not load " ++ name);
+fn metaMake(comptime name: []const u8, volume: f32) *p.SamplePlayer {
+    const player = make("sounds/" ++ name) catch @panic("Could not load " ++ name);
+    p.playdate.sound.sampleplayer.setVolume(player, volume, volume);
+    return player;
 }
 
 pub fn init() void {
-    click3 = metaMake("click3");
+    click3 = metaMake("click3", 0.1);
     p.playdate.sound.sampleplayer.setVolume(click3, 0.1, 0.1);
 
-    coin = metaMake("coin");
-    score = metaMake("score");
+    coin = metaMake("coin", 1.0);
+    score = metaMake("score", 0.3);
 }
 
 pub fn playOnce(sound: *p.SamplePlayer) void {
