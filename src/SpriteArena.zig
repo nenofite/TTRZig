@@ -12,9 +12,6 @@ tweens: tween.List,
 parent: ?*SpriteArena = null,
 children: std.ArrayList(*SpriteArena),
 
-head: ?*anyopaque,
-vtable: ?VTable,
-
 pub fn init(parentAlloc: std.mem.Allocator) !*SpriteArena {
     const self = try parentAlloc.create(SpriteArena);
     errdefer parentAlloc.destroy(self);
@@ -25,8 +22,6 @@ pub fn init(parentAlloc: std.mem.Allocator) !*SpriteArena {
         .sprites = undefined,
         .tweens = undefined,
         .children = undefined,
-        .head = null,
-        .vtable = null,
     };
     const alloc = self.alloc_inner.allocator();
     self.alloc = alloc;
@@ -47,20 +42,6 @@ pub fn deinit(self: *SpriteArena) void {
     self.deinitInner(false);
 }
 
-pub fn update(self: *SpriteArena) !void {
-    try self.vtable.update(self.head);
-}
-
-fn deinitHead(self: *SpriteArena) void {
-    if (self.head) |head| {
-        if (self.vtable) |vtable| {
-            vtable.deinit(head);
-        }
-    }
-    self.vtable = null;
-    self.head = null;
-}
-
 fn deinitInner(self: *SpriteArena, skipParent: bool) void {
     self.tweens.deinit();
     for (self.children.items) |child| {
@@ -74,34 +55,8 @@ fn deinitInner(self: *SpriteArena, skipParent: bool) void {
     if (!skipParent) if (self.parent) |parent| {
         parent.removeChild(self);
     };
-    self.deinitHead();
     self.alloc_inner.deinit();
     // self.arena.deinit();
-}
-
-fn wrapHead(self: *SpriteArena, comptime Head: type) !*Head {
-    const VTableImpl = struct {
-        fn updateImpl(ctx: *anyopaque) anyerror!void {
-            try Head.update(@alignCast(@ptrCast(ctx)));
-        }
-        fn deinitImpl(ctx: *anyopaque) void {
-            Head.deinit(@alignCast(@ptrCast(ctx)));
-        }
-        const vtable = VTable{
-            .update = updateImpl,
-            .deinit = deinitImpl,
-        };
-    };
-
-    const head = try self.alloc.create(Head);
-    errdefer self.alloc.destroy(head);
-    self.head = head;
-
-    self.vtable = VTableImpl.vtable;
-
-    head.arena = self;
-
-    return head;
 }
 
 fn removeChild(self: *SpriteArena, child: *SpriteArena) void {
@@ -117,19 +72,16 @@ pub fn allocator(self: *SpriteArena) std.mem.Allocator {
     return self.alloc;
 }
 
-pub fn newChild(self: *SpriteArena, comptime Head: type) !*Head {
+pub fn newChild(self: *SpriteArena) !*SpriteArena {
     const child = try init(self.alloc);
     errdefer self.alloc.destroy(child);
-
-    const head = try child.wrapHead(Head);
-    errdefer child.alloc.destroy(head);
 
     child.parent = self;
 
     try self.children.append(child);
     errdefer _ = self.children.pop();
 
-    return head;
+    return child;
 }
 
 pub fn newSprite(self: *SpriteArena) !*p.LCDSprite {
@@ -149,24 +101,6 @@ pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
     _ = self.sprites.swapRemove(i);
     p.playdate.sprite.freeSprite(sprite);
 }
-
-const VTable = struct {
-    update: *const fn (self: *anyopaque) anyerror!void,
-    deinit: *const fn (self: *anyopaque) void,
-};
-
-// const NoopVTable = struct {
-//     fn updateImpl(ctx: *anyopaque) anyerror!void {
-//         _ = ctx;
-//     }
-//     fn deinitImpl(ctx: *anyopaque) void {
-//         _ = ctx;
-//     }
-//     const vtable = VTable{
-//         .update = updateImpl,
-//         .deinit = deinitImpl,
-//     };
-// };
 
 const TrackedAllocator = struct {
     const OpenList = std.DoublyLinkedList([]u8);

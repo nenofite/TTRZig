@@ -139,14 +139,17 @@ const MainScreen = struct {
     arrows: std.ArrayList(*Arrow),
     score: *Score = undefined,
 
-    pub fn init(parent: *SpriteArena) !*MainScreen {
-        const self = parent.newChild(MainScreen);
-        errdefer self.arena.deinit();
+    pub fn init() !*MainScreen {
+        const arena = try SpriteArena.init(p.allocator);
+        errdefer arena.deinit();
+
+        const self = try arena.alloc.create(MainScreen);
+        errdefer arena.alloc.destroy(self);
 
         self.* = .{
-            .arena = self.arena,
-            .coins = std.ArrayList(*Coin).init(self.arena.alloc),
-            .arrows = std.ArrayList(*Arrow).init(self.arena.alloc),
+            .arena = arena,
+            .coins = std.ArrayList(*Coin).init(arena.alloc),
+            .arrows = std.ArrayList(*Arrow).init(arena.alloc),
         };
         errdefer self.deinitAllEntities();
 
@@ -161,7 +164,7 @@ const MainScreen = struct {
         self.haze = try Haze.init(self.arena);
         errdefer self.haze.deinit();
 
-        self.score = try Score.init(self.arena);
+        self.score = try Score.init(arena);
         errdefer self.score.deinit();
 
         self.ballastGauge = try Gauge.init(self.arena, .{
@@ -476,7 +479,7 @@ const TopState = union(enum) {
     pub fn update(self: *TopState) !void {
         switch (self.*) {
             .main => |main| try main.update(),
-            .win => |win| try win.update(),
+            .win => |win| win.update(),
         }
     }
 };
