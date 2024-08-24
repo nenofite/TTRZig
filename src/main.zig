@@ -6,6 +6,7 @@ const pat = @import("pattern.zig");
 const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
+const tags = @import("tags.zig");
 
 const Arrow = @import("Arrow.zig");
 const Haze = @import("Haze.zig");
@@ -120,10 +121,9 @@ const BlimpDynamics = struct {
 fn blimpCollisionResponse(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
     _ = self;
     const otherTag = p.playdate.sprite.getTag(other.?);
-    if (otherTag == Coin.tag) {
-        return .CollisionTypeOverlap;
-    } else {
-        return .CollisionTypeSlide;
+    switch (otherTag) {
+        tags.coin, tags.goal => return .CollisionTypeOverlap,
+        else => return .CollisionTypeSlide,
     }
 }
 
@@ -215,11 +215,17 @@ const MainScreen = struct {
 
             for (collisions) |collision| {
                 const otherTag = p.playdate.sprite.getTag(collision.other.?);
-                if (otherTag == Coin.tag) {
-                    p.log("Got a coin!", .{});
-                    if (self.findCoinOfSprite(collision.other.?)) |coin| {
-                        self.onHitCoin(coin);
-                    }
+                switch (otherTag) {
+                    tags.coin => {
+                        p.log("Got a coin!", .{});
+                        if (self.findCoinOfSprite(collision.other.?)) |coin| {
+                            self.onHitCoin(coin);
+                        }
+                    },
+                    tags.goal => {
+                        p.log("Goal!", .{});
+                    },
+                    else => {},
                 }
             }
         }
@@ -298,6 +304,17 @@ const MainScreen = struct {
         const arrowSection = parser.section('A', struct { x: i32, y: i32 }) orelse return error.LoadLevel;
         while (arrowSection.next()) |arrow| {
             _ = try self.addArrow(arrow.x, arrow.y);
+        }
+
+        // Goals
+        const goalSection = parser.section('G', struct { x: i32, y: i32, width: i32, height: i32 }) orelse return error.LoadLevel;
+        while (goalSection.next()) |goal| {
+            _ = try self.addGoalSprite(.{
+                .x = @floatFromInt(goal.x),
+                .y = @floatFromInt(goal.y),
+                .width = @floatFromInt(goal.width),
+                .height = @floatFromInt(goal.height),
+            });
         }
 
         const levelImg = p.playdate.graphics.newBitmap(dims.width, dims.height, @intFromEnum(p.LCDSolidColor.ColorBlack)) orelse @panic("Can't make level bitmap");
@@ -380,6 +397,24 @@ const MainScreen = struct {
         };
         p.playdate.sprite.setCollideRect(sprite, originRect);
         p.playdate.sprite.moveTo(sprite, x, y);
+        p.playdate.sprite.addSprite(sprite);
+        return sprite;
+    }
+
+    fn addGoalSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
+        const sprite = try self.arena.newSprite();
+        errdefer self.arena.freeSprite(sprite);
+        const x = rect.x;
+        const y = rect.y;
+        const originRect = p.PDRect{
+            .x = 0,
+            .y = 0,
+            .width = rect.width,
+            .height = rect.height,
+        };
+        p.playdate.sprite.setCollideRect(sprite, originRect);
+        p.playdate.sprite.moveTo(sprite, x, y);
+        p.playdate.sprite.setTag(sprite, tags.goal);
         p.playdate.sprite.addSprite(sprite);
         return sprite;
     }

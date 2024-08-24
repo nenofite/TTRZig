@@ -84,6 +84,13 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
         try resultWriter.print("{any} {any}\n", .{ arrow[0], arrow[1] });
     }
 
+    const goals = try extractEntityRects(alloc, "Goal", level);
+    defer alloc.free(goals);
+    try resultWriter.print("G\n", .{});
+    for (goals) |goal| {
+        try resultWriter.print("{} {} {} {}\n", .{ goal.x, goal.y, goal.width, goal.height });
+    }
+
     const wallIds = extractTileIDs(&root.root, "Wall");
     const skipIds = extractTileIDs(&root.root, "Skip");
 
@@ -123,6 +130,26 @@ fn extractEntityPositions(alloc: std.mem.Allocator, name: []const u8, level: *co
         for (layer.entityInstances) |entity| {
             if (!std.mem.eql(u8, entity.__identifier, name)) continue;
             try result.append(entity.px);
+        }
+    }
+    return try result.toOwnedSlice();
+}
+
+const Rect = struct {
+    x: i64,
+    y: i64,
+    width: i64,
+    height: i64,
+};
+
+fn extractEntityRects(alloc: std.mem.Allocator, name: []const u8, level: *const ldtk.Level) ![]Rect {
+    var result = std.ArrayList(Rect).init(alloc);
+    errdefer result.deinit();
+
+    for (level.layerInstances.?) |layer| {
+        for (layer.entityInstances) |entity| {
+            if (!std.mem.eql(u8, entity.__identifier, name)) continue;
+            try result.append(.{ .x = entity.px[0], .y = entity.px[1], .width = entity.width, .height = entity.height });
         }
     }
     return try result.toOwnedSlice();
