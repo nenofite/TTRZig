@@ -27,7 +27,6 @@ pub fn main() !void {
     defer alloc.free(rawFile);
 
     const result = try loadLevel(alloc, rawFile);
-    // const result = try std.fmt.allocPrint(alloc, "count is: {any}\nchao\n", .{ct});
     defer alloc.free(result);
 
     try outputFile.writeAll(result);
@@ -66,22 +65,22 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     const resultWriter = resultArr.writer();
 
     const spawnPos = extractSpawnPosition(level);
-    try resultWriter.print("S {any} {any}\n", .{ spawnPos[0], spawnPos[1] });
+    try resultWriter.print("S {} {}\n", .{ spawnPos[0], spawnPos[1] });
 
-    try resultWriter.print("X {any} {any}\n", .{ level.pxWid, level.pxHei });
+    try resultWriter.print("X {} {}\n", .{ level.pxWid, level.pxHei });
 
     const coins = try extractEntityPositions(alloc, "Coin", level);
     defer alloc.free(coins);
     try resultWriter.print("C\n", .{});
     for (coins) |coin| {
-        try resultWriter.print("{any} {any}\n", .{ coin[0], coin[1] });
+        try resultWriter.print("{} {}\n", .{ coin[0], coin[1] });
     }
 
     const arrows = try extractEntityPositions(alloc, "Arrow", level);
     defer alloc.free(arrows);
     try resultWriter.print("A\n", .{});
     for (arrows) |arrow| {
-        try resultWriter.print("{any} {any}\n", .{ arrow[0], arrow[1] });
+        try resultWriter.print("{} {}\n", .{ arrow[0], arrow[1] });
     }
 
     const goals = try extractEntityRects(alloc, "Goal", level);
@@ -104,7 +103,7 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
         const isWall = std.mem.indexOfScalar(i64, wallIds, tile.t) != null;
         const wallToken = if (isWall) "W" else "_";
 
-        try resultWriter.print("{any} {any} {s} {any}\n", .{ x, y, wallToken, tile.t });
+        try resultWriter.print("{} {} {s} {}\n", .{ x, y, wallToken, tile.t });
     }
 
     try resultWriter.print("Done!\n", .{});
