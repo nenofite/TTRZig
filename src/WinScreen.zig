@@ -20,23 +20,20 @@ title: *p.LCDSprite,
 backdropPattern: *const pat.Pattern = &pat.black,
 
 pub fn init(parent: *SpriteArena) !*WinScreen {
-    const arena = try parent.newChild();
-    errdefer arena.deinit();
-
-    const self = try arena.alloc.create(WinScreen);
-    errdefer arena.alloc.destroy(self);
+    const self = try parent.newChild(WinScreen);
+    errdefer self.arena.deinit();
 
     self.* = .{
-        .arena = arena,
+        .arena = self.arena,
         .backdrop = undefined,
         .title = undefined,
     };
 
-    self.backdrop = try arena.newSprite();
-    errdefer arena.freeSprite(self.backdrop);
+    self.backdrop = try self.arena.newSprite();
+    errdefer self.arena.freeSprite(self.backdrop);
 
-    self.title = try arena.newSprite();
-    errdefer arena.freeSprite(self.title);
+    self.title = try self.arena.newSprite();
+    errdefer self.arena.freeSprite(self.title);
 
     self.setupBackdrop();
 
@@ -51,7 +48,7 @@ pub fn deinit(self: *WinScreen) void {
     arena.deinit();
 }
 
-pub fn update(self: *WinScreen) void {
+pub fn update(self: *WinScreen) !void {
     _ = self.arena.tweens.update();
     p.playdate.sprite.markDirty(self.backdrop);
 }
