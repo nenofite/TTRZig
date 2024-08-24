@@ -16,6 +16,7 @@ const Gauge = @import("Gauge.zig");
 const Coin = @import("Coin.zig");
 const Score = @import("Score.zig");
 const LevelParser = @import("LevelParser.zig");
+const WinScreen = @import("WinScreen.zig");
 
 pub const panic = panic_handler.panic;
 
@@ -459,20 +460,26 @@ fn loadWholeFile(alloc: std.mem.Allocator, path: [*c]const u8) ![]u8 {
 
 const TopState = union(enum) {
     main: *MainScreen,
+    win: *WinScreen,
 
     pub fn init() !TopState {
-        return .{ .main = try MainScreen.init() };
+        const arena = try SpriteArena.init(p.allocator);
+        errdefer arena.deinit();
+        // return .{ .main = try MainScreen.init() };
+        return .{ .win = try WinScreen.init(arena) };
     }
 
     pub fn deinit(self: *TopState) void {
         switch (self.*) {
             .main => |main| main.deinit(),
+            .win => |win| win.deinit(),
         }
     }
 
     pub fn update(self: *TopState) !void {
         switch (self.*) {
             .main => |main| try main.update(),
+            .win => |win| win.update(),
         }
     }
 };
