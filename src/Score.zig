@@ -15,6 +15,7 @@ const digitSize = 20;
 arena: *SpriteArena,
 sprite: *p.LCDSprite,
 
+prevScore: u32 = 0,
 score: u32 = 0,
 scoreF: f32 = 0,
 
@@ -53,12 +54,24 @@ pub fn deinit(self: *Score) void {
 }
 
 pub fn update(self: *Score) void {
+    self.tweenScore();
     const prevScoreF = self.scoreF;
-    self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
+    _ = self.arena.tweens.update();
+    // self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
     if (@round(prevScoreF) < @round(self.scoreF)) {
         sounds.playOnceVaried(sounds.score, 0.025);
     }
     p.playdate.sprite.markDirty(self.sprite);
+}
+
+fn tweenScore(self: *Score) void {
+    if (self.score == self.prevScore) return;
+
+    self.prevScore = self.score;
+    self.arena.tweens.cancelClear();
+    var b = self.arena.tweens.build();
+    b.ease = .{ .curve = .cubic, .ends = .out };
+    b.of_f32(&self.scoreF, null, @floatFromInt(self.score), 1000, 0);
 }
 
 fn drawDigit(x: i32, y: i32, digit: f32) void {
