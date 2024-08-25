@@ -32,6 +32,7 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Coin {
 
     self.setPhaseImg();
     p.playdate.sprite.moveTo(sprite, x, y);
+    p.setZIndex(sprite, .coins);
     p.playdate.sprite.addSprite(sprite);
 
     return self;
