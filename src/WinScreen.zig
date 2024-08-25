@@ -94,6 +94,7 @@ pub fn update(self: *WinScreen) void {
         prev.update();
     }
     _ = self.arena.tweens.update();
+    self.score.update();
 
     if (self.backdropPattern != self.prevBackdropPattern) {
         self.prevBackdropPattern = self.backdropPattern;
