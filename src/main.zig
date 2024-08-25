@@ -63,11 +63,11 @@ const TopState = union(enum) {
     win: *WinScreen,
 
     pub fn init() !TopState {
-        const arena = try SpriteArena.init(p.allocator);
-        errdefer arena.deinit();
         const main = try MainScreen.init();
-        // return .{ .main = try MainScreen.init() };
-        return .{ .win = try WinScreen.init(arena, main) };
+        errdefer main.deinit();
+
+        return .{ .main = main };
+        // return .{ .win = try WinScreen.init(arena, main) };
     }
 
     pub fn deinit(self: *TopState) void {
@@ -79,7 +79,16 @@ const TopState = union(enum) {
 
     pub fn update(self: *TopState) !void {
         switch (self.*) {
-            .main => |main| main.update(),
+            .main => |main| {
+                const outcome = main.update();
+                switch (outcome) {
+                    .none => {},
+                    .won => {
+                        const win = try WinScreen.init(main);
+                        self.* = .{ .win = win };
+                    },
+                }
+            },
             .win => |win| win.update(),
         }
     }

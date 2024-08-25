@@ -28,8 +28,8 @@ prev: ?*MainScreen,
 backdropPattern: *const pat.Pattern = &pat.transparent,
 prevBackdropPattern: *const pat.Pattern = &pat.transparent,
 
-pub fn init(parent: *SpriteArena, prev: *MainScreen) !*WinScreen {
-    const arena = try parent.newChild();
+pub fn init(prev: *MainScreen) !*WinScreen {
+    const arena = try SpriteArena.init(p.allocator);
     errdefer arena.deinit();
 
     const self = try arena.alloc.create(WinScreen);
@@ -91,7 +91,7 @@ pub fn deinit(self: *WinScreen) void {
 
 pub fn update(self: *WinScreen) void {
     if (self.prev) |prev| {
-        prev.update();
+        _ = prev.update();
     }
     _ = self.arena.tweens.update();
     self.score.update();

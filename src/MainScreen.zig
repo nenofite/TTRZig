@@ -32,6 +32,11 @@ score: *Score = undefined,
 
 const TILE_SIZE = 8;
 
+pub const Outcome = enum {
+    none,
+    won,
+};
+
 pub fn init() !*MainScreen {
     const arena = try SpriteArena.init(p.allocator);
     errdefer arena.deinit();
@@ -97,10 +102,12 @@ pub fn init() !*MainScreen {
     return self;
 }
 
-pub fn update(self: *MainScreen) void {
+pub fn update(self: *MainScreen) Outcome {
     const blimp = self.blimp.?;
     self.blimpState.update();
     self.score.update();
+
+    var outcome = Outcome.none;
 
     const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
     if (collisionsOpt) |collisions| {
@@ -118,6 +125,7 @@ pub fn update(self: *MainScreen) void {
                 },
                 tags.goal => {
                     p.log("Goal!", .{});
+                    outcome = .won;
                 },
                 else => {},
             }
@@ -141,6 +149,8 @@ pub fn update(self: *MainScreen) void {
         @as(i32, @intFromFloat(self.blimpState.x)) + offset[0],
         @as(i32, @intFromFloat(self.blimpState.y)) + offset[1],
     });
+
+    return outcome;
 }
 
 pub fn deinit(self: *MainScreen) void {
