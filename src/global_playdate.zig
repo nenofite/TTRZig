@@ -177,6 +177,27 @@ pub fn log(comptime fmt: []const u8, args: anytype) void {
     playdate.system.logToConsole("[+%ums] %s", elapsed, fmtBuf.ptr);
 }
 
+pub fn setZIndex(sprite: *pdapi.LCDSprite, z: Z) void {
+    playdate.sprite.setZIndex(sprite, @intFromEnum(z));
+}
+
+pub const Z = enum(i16) {
+    tiles = 0,
+    arrows,
+    coins,
+    blimp,
+
+    haze,
+
+    ballastGauge,
+    score,
+
+    // Win screen
+    winBackdrop,
+    winTitle,
+    winScore,
+};
+
 const alloc_impl = struct {
     fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
         _ = ctx;

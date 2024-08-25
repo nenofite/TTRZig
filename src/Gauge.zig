@@ -40,7 +40,7 @@ pub const Options = struct {
     cx: f32,
     cy: f32,
     radius: i32,
-    zIndex: i16,
+    z: p.Z,
     heavyTicks: HeavyTicks = .{},
 };
 
@@ -70,7 +70,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
 
     p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
     p.playdate.sprite.moveTo(sprite, options.cx, options.cy);
-    p.playdate.sprite.setZIndex(sprite, options.zIndex);
+    p.setZIndex(sprite, options.z);
     p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
 

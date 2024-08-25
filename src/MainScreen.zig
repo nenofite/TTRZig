@@ -57,7 +57,7 @@ pub fn init() !*MainScreen {
     self.haze = try Haze.init(self.arena);
     errdefer self.haze.deinit();
 
-    self.score = try Score.init(arena);
+    self.score = try Score.init(arena, .score);
     errdefer self.score.deinit();
 
     self.ballastGauge = try Gauge.init(self.arena, .{
@@ -68,7 +68,7 @@ pub fn init() !*MainScreen {
         .ticks = BlimpDynamics.ticks + 1,
         .tickLength = 7,
         .radius = 37,
-        .zIndex = 10,
+        .z = .ballastGauge,
         .heavyTicks = .{ .min = true, .mid = true, .max = true },
     });
     errdefer self.ballastGauge.deinit();
@@ -84,7 +84,7 @@ pub fn init() !*MainScreen {
         .width = 19,
         .height = 18,
     });
-    p.playdate.sprite.setZIndex(blimp, 2);
+    p.setZIndex(blimp, .blimp);
     p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
     p.playdate.sprite.setCollisionResponseFunction(blimp, blimpCollisionResponse);
     p.playdate.sprite.addSprite(blimp);
@@ -239,7 +239,7 @@ fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
     p.log("Making it into a sprite", .{});
     p.playdate.sprite.setImage(levelSprite, levelImg, .BitmapUnflipped);
     p.playdate.sprite.setCenter(levelSprite, 0, 0);
-    p.playdate.sprite.setZIndex(levelSprite, -1);
+    p.setZIndex(levelSprite, .tiles);
     p.playdate.sprite.addSprite(levelSprite);
 
     return levelSprite;

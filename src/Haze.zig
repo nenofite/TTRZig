@@ -58,7 +58,7 @@ pub fn init(parentArena: *SpriteArena) !*@This() {
     // p.playdate.sprite.setSize(sprite, p.WIDTH, p.HEIGHT);
     p.playdate.sprite.setImage(sprite, spriteImg, .BitmapUnflipped);
     p.playdate.sprite.setCenter(sprite, 0, 0);
-    p.playdate.sprite.setZIndex(sprite, 5);
+    p.setZIndex(sprite, .haze);
     p.playdate.sprite.setOpaque(sprite, 0);
     p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     _ = p.playdate.sprite.setDrawMode(sprite, .DrawModeWhiteTransparent);

@@ -19,6 +19,9 @@ arena: *SpriteArena,
 backdrop: *p.LCDSprite,
 title: *p.LCDSprite,
 titleImg: *p.LCDBitmap,
+endedWithScore: u32,
+
+score: *Score,
 
 prev: ?*MainScreen,
 
@@ -37,7 +40,9 @@ pub fn init(parent: *SpriteArena, prev: *MainScreen) !*WinScreen {
         .backdrop = undefined,
         .title = undefined,
         .titleImg = undefined,
+        .score = undefined,
         .prev = prev,
+        .endedWithScore = prev.score.score,
     };
 
     self.backdrop = try arena.newSprite();
@@ -49,7 +54,7 @@ pub fn init(parent: *SpriteArena, prev: *MainScreen) !*WinScreen {
     p.playdate.sprite.setUserdata(self.backdrop, self);
     p.playdate.sprite.setDrawFunction(self.backdrop, drawBackdrop);
     p.playdate.sprite.setIgnoresDrawOffset(self.backdrop, 1);
-    p.playdate.sprite.setZIndex(self.backdrop, 100);
+    p.setZIndex(self.backdrop, .winBackdrop);
     p.playdate.sprite.addSprite(self.backdrop);
 
     self.titleImg = try text_sprite.makeTextBmp("Glorious!", images.mans, 4);
@@ -62,8 +67,14 @@ pub fn init(parent: *SpriteArena, prev: *MainScreen) !*WinScreen {
     p.playdate.sprite.setCenter(self.title, 0.5, 0.5);
     p.playdate.sprite.moveTo(self.title, p.WIDTH / 2, p.HEIGHT + 50);
     p.playdate.sprite.setIgnoresDrawOffset(self.title, 1);
-    p.playdate.sprite.setZIndex(self.title, 201);
+    p.setZIndex(self.title, .winTitle);
     p.playdate.sprite.addSprite(self.title);
+
+    self.score = try Score.init(arena, .winScore);
+    errdefer self.score.deinit();
+
+    p.playdate.sprite.setCenter(self.score.sprite, 0.5, 0);
+    p.playdate.sprite.moveTo(self.score.sprite, p.WIDTH / 2, p.HEIGHT + 50);
 
     self.entranceTween();
 
@@ -82,13 +93,7 @@ pub fn update(self: *WinScreen) void {
     if (self.prev) |prev| {
         prev.update();
     }
-    const active = self.arena.tweens.update();
-    if (!active) {
-        if (self.prev) |prev| {
-            prev.deinit();
-            self.prev = null;
-        }
-    }
+    _ = self.arena.tweens.update();
 
     if (self.backdropPattern != self.prevBackdropPattern) {
         self.prevBackdropPattern = self.backdropPattern;
@@ -122,10 +127,17 @@ fn entranceTween(self: *WinScreen) void {
 
     b.of_callback(clearPrev, self, 0);
 
-    b.wait(1000);
+    b.wait(step);
 
     b.ease = .{ .curve = .cubic, .ends = .out };
     b.of_sprite_pos(self.title, p.WIDTH / 2, p.HEIGHT / 2, 400, 0);
+    b.mode = .par;
+    b.wait(100);
+    b.of_sprite_pos(self.score.sprite, p.WIDTH / 2, p.HEIGHT - 80, 400, 0);
+
+    b.mode = .seq;
+    b.of_discrete(u32, &self.score.score, self.endedWithScore, 0);
+    // b.of_f32(&self.score.score, 0, self.endedWithScore, 1000, 0);
 }
 
 fn drawBackdrop(sprite: ?*p.LCDSprite, bounds: p.PDRect, drawrect: p.PDRect) callconv(.C) void {

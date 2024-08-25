@@ -19,7 +19,7 @@ prevScore: u32 = 0,
 score: u32 = 0,
 scoreF: f32 = 0,
 
-pub fn init(parentArena: *SpriteArena) !*Score {
+pub fn init(parentArena: *SpriteArena, z: p.Z) !*Score {
     const arena = try parentArena.newChild();
     errdefer arena.deinit();
 
@@ -32,7 +32,7 @@ pub fn init(parentArena: *SpriteArena) !*Score {
     p.playdate.sprite.setCenter(sprite, 1, 0);
     p.playdate.sprite.moveTo(sprite, p.WIDTH, p.HEIGHT / 2);
     p.playdate.sprite.setSize(sprite, 3 * digitSize, digitSize);
-    p.playdate.sprite.setZIndex(sprite, 9);
+    p.setZIndex(sprite, z);
     p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
     p.playdate.sprite.setUserdata(sprite, @ptrCast(self));

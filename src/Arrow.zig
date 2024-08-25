@@ -31,7 +31,7 @@ pub fn init(parentArena: *SpriteArena, x: f32, y: f32) !*@This() {
 
     // p.playdate.sprite.setSize(sprite, p.WIDTH, p.HEIGHT);
     p.playdate.sprite.setCenter(self.sprite, 0, 0);
-    p.playdate.sprite.setZIndex(self.sprite, 1);
+    p.setZIndex(self.sprite, .arrows);
     p.playdate.sprite.moveTo(self.sprite, x, y);
     // p.playdate.sprite.setOpaque(sprite, 0);
     p.playdate.sprite.addSprite(self.sprite);
