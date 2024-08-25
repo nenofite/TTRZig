@@ -1431,6 +1431,38 @@
 							"fieldInstances": [],
 							"__worldX": 360,
 							"__worldY": 168
+						},
+						{
+							"__identifier": "Arrow",
+							"__grid": [28,36],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": { "tilesetUid": 92, "x": 0, "y": 96, "w": 32, "h": 32 },
+							"__smartColor": "#BE4A2F",
+							"iid": "c519b260-4ce0-11ef-a591-d12f64d95814",
+							"width": 32,
+							"height": 32,
+							"defUid": 97,
+							"px": [224,288],
+							"fieldInstances": [],
+							"__worldX": 224,
+							"__worldY": 168
+						},
+						{
+							"__identifier": "Arrow",
+							"__grid": [5,24],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": { "tilesetUid": 92, "x": 0, "y": 96, "w": 32, "h": 32 },
+							"__smartColor": "#BE4A2F",
+							"iid": "ca9ea920-4ce0-11ef-a591-9fb7c596a34b",
+							"width": 32,
+							"height": 32,
+							"defUid": 97,
+							"px": [40,192],
+							"fieldInstances": [],
+							"__worldX": 40,
+							"__worldY": 72
 						}
 					]
 				},
