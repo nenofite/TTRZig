@@ -19,6 +19,8 @@ prevScore: u32 = 0,
 score: u32 = 0,
 scoreF: f32 = 0,
 
+const margin = 3;
+
 pub fn init(parentArena: *SpriteArena, z: p.Z) !*Score {
     const arena = try parentArena.newChild();
     errdefer arena.deinit();
@@ -31,7 +33,7 @@ pub fn init(parentArena: *SpriteArena, z: p.Z) !*Score {
 
     p.playdate.sprite.setCenter(sprite, 1, 0);
     p.playdate.sprite.moveTo(sprite, p.WIDTH, p.HEIGHT / 2);
-    p.playdate.sprite.setSize(sprite, 3 * digitSize, digitSize);
+    p.playdate.sprite.setSize(sprite, 3 * digitSize + 2 * margin, digitSize + 2 * margin);
     p.setZIndex(sprite, z);
     p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
@@ -96,19 +98,36 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         @intFromFloat(bounds.width),
         @intFromFloat(bounds.height),
         @intFromEnum(p.LCDSolidColor.ColorWhite),
+        // @intFromPtr(&pat.dot_2),
     );
+    p.playdate.graphics.setDrawMode(.DrawModeWhiteTransparent);
     var digits = [1]f32{0} ** numDigits;
     digitRoll(self.scoreF, &digits);
-    var digitX = x + (numDigits - 1) * digitSize;
+    var digitX = x + margin + (numDigits - 1) * digitSize;
     for (digits) |digit| {
-        drawDigit(digitX, y, digit);
+        drawDigit(digitX, y + margin, digit);
         digitX -= digitSize;
     }
+    p.playdate.graphics.setDrawMode(.DrawModeCopy);
+    p.playdate.graphics.drawRect(
+        @intFromFloat(bounds.x),
+        @intFromFloat(bounds.y),
+        @intFromFloat(bounds.width),
+        @intFromFloat(bounds.height),
+        @intFromEnum(p.LCDSolidColor.ColorBlack),
+    );
     p.playdate.graphics.drawRect(
         @intFromFloat(bounds.x + 1),
         @intFromFloat(bounds.y + 1),
         @intFromFloat(bounds.width - 2),
         @intFromFloat(bounds.height - 2),
+        @intFromPtr(&pat.gray),
+    );
+    p.playdate.graphics.drawRect(
+        @intFromFloat(bounds.x + 2),
+        @intFromFloat(bounds.y + 2),
+        @intFromFloat(bounds.width - 4),
+        @intFromFloat(bounds.height - 4),
         @intFromEnum(p.LCDSolidColor.ColorBlack),
     );
 }

@@ -7,8 +7,6 @@ const SpriteArena = @import("SpriteArena.zig");
 
 const Gauge = @This();
 
-const backgroundPat = [8]u8{ 0x7F, 0xFF, 0xFF, 0xFF, 0xF7, 0xFF, 0xFF, 0xFF } ++ pat.alphaMask;
-
 arena: *SpriteArena,
 sprite: *p.LCDSprite,
 img: *p.LCDBitmap,
@@ -210,7 +208,7 @@ fn drawBase(self: *Gauge) void {
         radius * 2,
         0,
         360,
-        @intFromPtr(&backgroundPat),
+        @intFromPtr(&pat.dot_2),
     );
 }
 
