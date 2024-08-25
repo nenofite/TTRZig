@@ -23,6 +23,7 @@ titleImg: *p.LCDBitmap,
 prev: ?*MainScreen,
 
 backdropPattern: *const pat.Pattern = &pat.transparent,
+prevBackdropPattern: *const pat.Pattern = &pat.transparent,
 
 pub fn init(parent: *SpriteArena, prev: *MainScreen) !*WinScreen {
     const arena = try parent.newChild();
@@ -82,12 +83,23 @@ pub fn update(self: *WinScreen) void {
         prev.update();
     }
     const active = self.arena.tweens.update();
-    p.playdate.sprite.markDirty(self.backdrop);
     if (!active) {
         if (self.prev) |prev| {
             prev.deinit();
             self.prev = null;
         }
+    }
+
+    if (self.backdropPattern != self.prevBackdropPattern) {
+        self.prevBackdropPattern = self.backdropPattern;
+        p.playdate.sprite.markDirty(self.backdrop);
+    }
+}
+
+fn clearPrev(self: *WinScreen) void {
+    if (self.prev) |prev| {
+        prev.deinit();
+        self.prev = null;
     }
 }
 
@@ -108,13 +120,22 @@ fn entranceTween(self: *WinScreen) void {
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.white), 0);
     // b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.darkgray_2), 0);
 
+    b.of_callback(clearPrev, self, 0);
+
+    b.wait(1000);
+
     b.ease = .{ .curve = .cubic, .ends = .out };
     b.of_sprite_pos(self.title, p.WIDTH / 2, p.HEIGHT / 2, 400, 0);
 }
 
 fn drawBackdrop(sprite: ?*p.LCDSprite, bounds: p.PDRect, drawrect: p.PDRect) callconv(.C) void {
     _ = bounds;
-    _ = drawrect;
     const self: *WinScreen = @alignCast(@ptrCast(p.playdate.sprite.getUserdata(sprite).?));
-    p.playdate.graphics.fillRect(0, 0, p.WIDTH, p.HEIGHT, @intFromPtr(self.backdropPattern));
+    p.playdate.graphics.fillRect(
+        @intFromFloat(drawrect.x),
+        @intFromFloat(drawrect.y),
+        @intFromFloat(drawrect.width),
+        @intFromFloat(drawrect.height),
+        @intFromPtr(self.backdropPattern),
+    );
 }

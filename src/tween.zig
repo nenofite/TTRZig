@@ -31,6 +31,10 @@ pub const Target = union(enum) {
         from: ?[2]f32,
         to: [2]f32,
     },
+    callback: struct {
+        ctx: *anyopaque,
+        func: *const fn (*anyopaque) void,
+    },
 
     fn apply(self: *Target, f: f32) void {
         switch (self.*) {
@@ -53,7 +57,7 @@ pub const Target = union(enum) {
                 const diff: f32 = @floatFromInt(t.to - from_);
                 t.target.* = from_ + @as(i32, @intFromFloat(f * diff));
             },
-            .discrete, .slice => {},
+            .discrete, .slice, .callback => {},
             .spritePos => |*t| {
                 const from = t.from orelse calcFrom: {
                     var from_ = [2]f32{ 0, 0 };
@@ -88,6 +92,9 @@ pub const Target = union(enum) {
             },
             .spritePos => |t| {
                 p.playdate.sprite.moveTo(t.target, t.to[0], t.to[1]);
+            },
+            .callback => |t| {
+                t.func(t.ctx);
             },
         }
     }
@@ -340,6 +347,25 @@ pub const List = struct {
                     .target = target,
                     .from = null,
                     .to = .{ toX, toY },
+                } },
+            });
+        }
+
+        pub fn of_callback(b: *Builder, func: anytype, arg: anytype, delay: u32) void {
+            const Virtual = struct {
+                fn impl(ctx: *anyopaque) void {
+                    const ctxArg: @TypeOf(arg) = @alignCast(@ptrCast(ctx));
+                    func(ctxArg);
+                }
+            };
+
+            b.append(.{
+                .delay = delay,
+                .dur = 0,
+                .ease = b.ease,
+                .target = .{ .callback = .{
+                    .func = Virtual.impl,
+                    .ctx = arg,
                 } },
             });
         }
