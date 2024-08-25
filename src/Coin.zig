@@ -9,21 +9,24 @@ const SpriteArena = @import("SpriteArena.zig");
 
 const Coin = @This();
 
-nodeData: SpriteArena.NodeData,
+arena: *SpriteArena,
 sprite: *p.LCDSprite,
 
 pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Coin {
-    const self = try parent.newNode(Coin);
-    errdefer parent.freeNode(self);
+    const arena = try parent.newChild();
+    errdefer arena.deinit();
 
-    const sprite = try self.nodeData.arena.newSprite();
-    errdefer self.nodeData.arena.freeSprite(sprite);
+    const self = try arena.alloc.create(Coin);
+    errdefer arena.alloc.destroy(self);
+
+    const sprite = try arena.newSprite();
+    errdefer arena.freeSprite(sprite);
 
     p.playdate.sprite.setTag(sprite, tags.coin);
     p.playdate.sprite.setCollideRect(sprite, .{ .x = 0, .y = 0, .width = 8, .height = 8 });
 
     self.* = .{
-        .nodeData = self.nodeData,
+        .arena = arena,
         .sprite = sprite,
     };
 

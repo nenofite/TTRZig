@@ -84,21 +84,6 @@ pub fn newChild(self: *SpriteArena) !*SpriteArena {
     return child;
 }
 
-pub fn newNode(self: *SpriteArena, comptime Head: type) !*Head {
-    const child = try self.newChild();
-    errdefer child.deinit();
-
-    const head = try child.alloc.create(Head);
-    errdefer child.alloc.destroy(head);
-
-    head.nodeData = NodeData{
-        .arena = child,
-        .parent = self,
-    };
-
-    return head;
-}
-
 pub fn newSprite(self: *SpriteArena) !*p.LCDSprite {
     const sprite = p.playdate.sprite.newSprite() orelse return error.CannotAllocateSprite;
     errdefer p.playdate.sprite.freeSprite(sprite);
@@ -115,112 +100,6 @@ pub fn freeSprite(self: *SpriteArena, sprite: *p.LCDSprite) void {
     };
     _ = self.sprites.swapRemove(i);
     p.playdate.sprite.freeSprite(sprite);
-}
-
-pub const AnyNode = struct {
-    node: *anyopaque,
-    data: *NodeData,
-    vtable: *const VTable,
-
-    pub fn update(self: *AnyNode) void {
-        self.vtable.update(self.head);
-    }
-
-    pub fn deinit(self: *AnyNode) void {
-        const arena = self.arena;
-        self.vtable.deinit(self.head);
-        arena.alloc.destroy(self);
-        arena.deinit();
-    }
-
-    const VTable = struct {
-        update: *const fn (head: *anyopaque) void,
-        deinit: *const fn (head: *anyopaque) void,
-    };
-
-    pub fn newChild(self: *AnyNode, comptime Head: type) !*Head {
-        const child = try Node(Head).init(self);
-        errdefer child.deinit();
-
-        try self.data.children.append(child.asAny());
-        errdefer _ = self.data.children.pop();
-
-        return child;
-    }
-
-    pub fn removeChild(self: *AnyNode, child: AnyNode) void {
-        const i = for (self.data.children.items, 0..) |c, ci| {
-            if (c.node == child.node) {
-                break ci;
-            }
-        } else {
-            p.softFail("Removed child node not in list");
-            return;
-        };
-        _ = self.data.children.swapRemove(i);
-    }
-};
-
-pub const NodeData = struct {
-    arena: *SpriteArena,
-    parent: ?*AnyNode,
-    children: std.ArrayList(*AnyNode),
-};
-
-pub fn Node(comptime Head: type) type {
-    return struct {
-        pub fn init(parent: *AnyNode) !*Head {
-            const arena = try parent.data.arena.newChild();
-            errdefer arena.deinit();
-
-            // const head = try arena.alloc.create(Head);
-            // errdefer arena.alloc.destroy(head);
-
-            const self = try arena.alloc.create(Head);
-            errdefer arena.alloc.destroy(self);
-
-            self.nodeData = NodeData{
-                .arena = arena,
-                .parent = parent,
-            };
-
-            return self;
-        }
-
-        pub fn deinit(self: *Head) void {
-            const arena: *SpriteArena = self.nodeData.arena;
-            self.deinit();
-            if (self.nodeData.parent) |parent| {
-                parent.removeChild(self.asAny());
-                self.nodeData.parent = null;
-            }
-            arena.alloc.destroy(self);
-            arena.deinit();
-        }
-
-        pub fn asAny(self: *Head) AnyNode {
-            return .{
-                .node = self,
-                .data = &self.nodeData,
-                .vtable = &vtable,
-            };
-        }
-
-        const vtable = AnyNode.VTable{
-            .update = updateVirt,
-            .deinit = deinitVirt,
-        };
-
-        fn updateVirt(headOpaq: *anyopaque) void {
-            const head: *Head = @alignCast(@ptrCast(headOpaq));
-            head.update();
-        }
-
-        fn deinitVirt(headOpaq: *anyopaque) void {
-            const head: *Head = @alignCast(@ptrCast(headOpaq));
-            @This().deinit(head);
-        }
-    };
 }
 
 const TrackedAllocator = struct {
