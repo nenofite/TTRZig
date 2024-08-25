@@ -97,8 +97,14 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
         @intFromFloat(bounds.y),
         @intFromFloat(bounds.width),
         @intFromFloat(bounds.height),
+        @intFromEnum(p.LCDSolidColor.ColorBlack),
+    );
+    p.playdate.graphics.fillRect(
+        @intFromFloat(bounds.x + 4),
+        @intFromFloat(bounds.y + 4),
+        @intFromFloat(bounds.width - 8),
+        @intFromFloat(bounds.height - 8),
         @intFromEnum(p.LCDSolidColor.ColorWhite),
-        // @intFromPtr(&pat.dot_2),
     );
     p.playdate.graphics.setDrawMode(.DrawModeWhiteTransparent);
     var digits = [1]f32{0} ** numDigits;
@@ -110,25 +116,11 @@ fn drawCallback(sprite: ?*p.LCDSprite, bounds: p.PDRect, _: p.PDRect) callconv(.
     }
     p.playdate.graphics.setDrawMode(.DrawModeCopy);
     p.playdate.graphics.drawRect(
-        @intFromFloat(bounds.x),
-        @intFromFloat(bounds.y),
-        @intFromFloat(bounds.width),
-        @intFromFloat(bounds.height),
-        @intFromEnum(p.LCDSolidColor.ColorBlack),
-    );
-    p.playdate.graphics.drawRect(
         @intFromFloat(bounds.x + 1),
         @intFromFloat(bounds.y + 1),
         @intFromFloat(bounds.width - 2),
-        @intFromFloat(bounds.height - 2),
-        @intFromPtr(&pat.gray),
-    );
-    p.playdate.graphics.drawRect(
-        @intFromFloat(bounds.x + 2),
-        @intFromFloat(bounds.y + 2),
-        @intFromFloat(bounds.width - 4),
         @intFromFloat(bounds.height - 4),
-        @intFromEnum(p.LCDSolidColor.ColorBlack),
+        @intFromEnum(p.LCDSolidColor.ColorWhite),
     );
 }
 
