@@ -58,8 +58,11 @@ pub fn update(self: *Score) void {
     const prevScoreF = self.scoreF;
     _ = self.arena.tweens.update();
     // self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
-    if (@round(prevScoreF) < @round(self.scoreF)) {
+    const roundCmp = @round(self.scoreF) - @round(prevScoreF);
+    if (roundCmp > 0) {
         sounds.playOnceVaried(sounds.score, 0.025);
+    } else if (roundCmp < 0) {
+        sounds.playOnceVaried(sounds.loseCoin, 0.025);
     }
     p.playdate.sprite.markDirty(self.sprite);
 }

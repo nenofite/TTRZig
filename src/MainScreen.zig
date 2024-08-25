@@ -141,7 +141,8 @@ pub fn update(self: *MainScreen) Outcome {
                     if (collision.normal.x > 0 and newVelX < 0) newVelX *= -1;
                     if (collision.normal.x < 0 and newVelX > 0) newVelX *= -1;
                     if (collision.normal.y > 0 and newVelY < 0) newVelY *= -1;
-                    if (collision.normal.y < 0 and newVelY > 0) newVelY *= -1;
+                    // Bottom is not bouncy
+                    // if (collision.normal.y < 0 and newVelY > 0) newVelY *= -1;
                     self.blimpState.velX = newVelX;
                     self.blimpState.velY = newVelY;
                 },

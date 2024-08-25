@@ -3,6 +3,7 @@ const p = @import("global_playdate.zig");
 
 pub var click3: *p.SamplePlayer = undefined;
 pub var coin: *p.SamplePlayer = undefined;
+pub var loseCoin: *p.SamplePlayer = undefined;
 pub var score: *p.SamplePlayer = undefined;
 
 fn make(path: [*c]const u8) !*p.SamplePlayer {
@@ -30,7 +31,8 @@ pub fn init() void {
     click3 = metaMake("click3", 0.1);
     p.playdate.sound.sampleplayer.setVolume(click3, 0.1, 0.1);
 
-    coin = metaMake("coin", 1.0);
+    coin = metaMake("coin", 0.7);
+    loseCoin = metaMake("lose_coin", 0.3);
     score = metaMake("score", 0.3);
 }
 
