@@ -127,7 +127,24 @@ pub fn update(self: *MainScreen) Outcome {
                     p.log("Goal!", .{});
                     outcome = .won;
                 },
-                else => {},
+                tags.spike => {
+                    p.log("Ouch!", .{});
+                    self.score.score = 0;
+
+                    self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
+                    self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
+                },
+                else => {
+                    // Wall
+                    var newVelX = self.blimpState.velX;
+                    var newVelY = self.blimpState.velY;
+                    if (collision.normal.x > 0 and newVelX < 0) newVelX *= -1;
+                    if (collision.normal.x < 0 and newVelX > 0) newVelX *= -1;
+                    if (collision.normal.y > 0 and newVelY < 0) newVelY *= -1;
+                    if (collision.normal.y < 0 and newVelY > 0) newVelY *= -1;
+                    self.blimpState.velX = newVelX;
+                    self.blimpState.velY = newVelY;
+                },
             }
         }
     }
@@ -392,7 +409,7 @@ const BlimpDynamics = struct {
 
     pub fn update(self: *BlimpDynamics) void {
         self.t +%= 1;
-        self.velX *= 0.9;
+        self.velX *= 0.95;
         self.velY *= 0.9;
         self.velX += (p.random.float(f32) - 0.5) * 0.0;
         self.velY += @sin(@as(f32, @floatFromInt(self.t)) / 50 * 6) * 0.01;
@@ -414,10 +431,11 @@ const BlimpDynamics = struct {
         self.ballast = std.math.clamp(self.ballast, 0, maxBallast);
 
         const btns = p.getButtonState();
+        const accel = 2.0 / @as(comptime_float, @floatFromInt(tween.framerate));
         if (btns.current.left) {
-            self.velX = -1;
+            self.velX += -accel;
         } else if (btns.current.right) {
-            self.velX = 1;
+            self.velX += accel;
         }
 
         const diff = neutralBallast - self.ballast;
@@ -440,7 +458,7 @@ fn blimpCollisionResponse(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C
     const otherTag = p.playdate.sprite.getTag(other.?);
     switch (otherTag) {
         tags.coin, tags.goal => return .CollisionTypeOverlap,
-        tags.spike => return .CollisionTypeBounce,
+        tags.spike => return .CollisionTypeFreeze,
         else => return .CollisionTypeSlide,
     }
 }
