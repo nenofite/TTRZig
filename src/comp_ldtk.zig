@@ -92,6 +92,12 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
 
     const wallIds = extractTileIDs(&root.root, "Wall");
     const skipIds = extractTileIDs(&root.root, "Skip");
+    const spikeIds = extractTileIDs(&root.root, "Spike");
+
+    const idToToken = [_]struct { ids: []const i64, token: []const u8 }{
+        .{ .ids = wallIds, .token = "W" },
+        .{ .ids = spikeIds, .token = "S" },
+    };
 
     _ = try resultWriter.write("T\n");
     for (mainLayer.autoLayerTiles) |tile| {
@@ -100,10 +106,13 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
         const shouldSkip = std.mem.indexOfScalar(i64, skipIds, tile.t) != null;
         if (shouldSkip) continue;
 
-        const isWall = std.mem.indexOfScalar(i64, wallIds, tile.t) != null;
-        const wallToken = if (isWall) "W" else "_";
+        const token = for (idToToken) |pair| {
+            if (std.mem.indexOfScalar(i64, pair.ids, tile.t) != null) {
+                break pair.token;
+            }
+        } else "_";
 
-        try resultWriter.print("{} {} {s} {}\n", .{ x, y, wallToken, tile.t });
+        try resultWriter.print("{} {} {s} {}\n", .{ x, y, token, tile.t });
     }
 
     try resultWriter.print("Done!\n", .{});

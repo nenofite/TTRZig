@@ -237,10 +237,9 @@ fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
         p.log("Parsing file", .{});
 
         var tileCount: u32 = 0;
-        const tileSection = parser.section('T', struct { x: i32, y: i32, wallToken: u8, id: i32 }) orelse return error.LoadLevel;
+        const tileSection = parser.section('T', struct { x: i32, y: i32, token: u8, id: i32 }) orelse return error.LoadLevel;
         while (tileSection.next()) |tile| {
-            const isWall = tile.wallToken == 'W';
-            _ = try self.addTile(tile.x, tile.y, tile.id, isWall);
+            _ = try self.addTile(tile.x, tile.y, tile.id, tile.token);
             tileCount += 1;
         }
         p.log("Found {any} tiles", .{tileCount});
@@ -255,15 +254,26 @@ fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
     return levelSprite;
 }
 
-fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, isWall: bool) !void {
+fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, token: u8) !void {
     const tileImg = p.playdate.graphics.getTableBitmap(images.dungeonTable, tileId) orelse return error.UnknownTile;
-    if (isWall) {
-        _ = try self.addEmptyCollisionSprite(.{
-            .x = @floatFromInt(x),
-            .y = @floatFromInt(y),
-            .width = TILE_SIZE,
-            .height = TILE_SIZE,
-        });
+    switch (token) {
+        'W' => {
+            _ = try self.addWallCollider(.{
+                .x = @floatFromInt(x),
+                .y = @floatFromInt(y),
+                .width = TILE_SIZE,
+                .height = TILE_SIZE,
+            });
+        },
+        'S' => {
+            _ = try self.addSpikeCollider(.{
+                .x = @floatFromInt(x),
+                .y = @floatFromInt(y),
+                .width = TILE_SIZE,
+                .height = TILE_SIZE,
+            });
+        },
+        else => {},
     }
     p.playdate.graphics.drawBitmap(tileImg, x, y, .BitmapUnflipped);
 }
@@ -288,7 +298,7 @@ fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {
     return arrow;
 }
 
-fn addEmptyCollisionSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
+fn addWallCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
     const sprite = try self.arena.newSprite();
     errdefer self.arena.freeSprite(sprite);
     const x = rect.x;
@@ -301,6 +311,24 @@ fn addEmptyCollisionSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
     };
     p.playdate.sprite.setCollideRect(sprite, originRect);
     p.playdate.sprite.moveTo(sprite, x, y);
+    p.playdate.sprite.addSprite(sprite);
+    return sprite;
+}
+
+fn addSpikeCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
+    const sprite = try self.arena.newSprite();
+    errdefer self.arena.freeSprite(sprite);
+    const x = rect.x;
+    const y = rect.y;
+    const originRect = p.PDRect{
+        .x = 0,
+        .y = 0,
+        .width = rect.width,
+        .height = rect.height,
+    };
+    p.playdate.sprite.setCollideRect(sprite, originRect);
+    p.playdate.sprite.moveTo(sprite, x, y);
+    p.playdate.sprite.setTag(sprite, tags.spike);
     p.playdate.sprite.addSprite(sprite);
     return sprite;
 }
@@ -412,6 +440,7 @@ fn blimpCollisionResponse(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C
     const otherTag = p.playdate.sprite.getTag(other.?);
     switch (otherTag) {
         tags.coin, tags.goal => return .CollisionTypeOverlap,
+        tags.spike => return .CollisionTypeBounce,
         else => return .CollisionTypeSlide,
     }
 }
