@@ -26,6 +26,11 @@ pub const Target = union(enum) {
         target: []u8,
         to: []const u8,
     },
+    spritePos: struct {
+        target: *p.LCDSprite,
+        from: ?[2]f32,
+        to: [2]f32,
+    },
 
     fn apply(self: *Target, f: f32) void {
         switch (self.*) {
@@ -49,6 +54,17 @@ pub const Target = union(enum) {
                 t.target.* = from_ + @as(i32, @intFromFloat(f * diff));
             },
             .discrete, .slice => {},
+            .spritePos => |*t| {
+                const from = t.from orelse calcFrom: {
+                    var from_ = [2]f32{ 0, 0 };
+                    p.playdate.sprite.getPosition(t.target, &from_[0], &from_[1]);
+                    t.from = from_;
+                    break :calcFrom from_;
+                };
+                const diffX = t.to[0] - from[0];
+                const diffY = t.to[1] - from[1];
+                p.playdate.sprite.moveTo(t.target, from[0] + f * diffX, from[1] + f * diffY);
+            },
         }
     }
 
@@ -69,6 +85,9 @@ pub const Target = union(enum) {
             .slice => |*t| {
                 std.debug.assert(t.target.len == t.to.len);
                 @memcpy(t.target, t.to);
+            },
+            .spritePos => |t| {
+                p.playdate.sprite.moveTo(t.target, t.to[0], t.to[1]);
             },
         }
     }
@@ -308,6 +327,19 @@ pub const List = struct {
                 .target = .{ .slice = .{
                     .target = std.mem.asBytes(target),
                     .to = std.mem.asBytes(to),
+                } },
+            });
+        }
+
+        pub fn of_sprite_pos(b: *Builder, target: *p.LCDSprite, toX: f32, toY: f32, dur: u32, delay: u32) void {
+            b.append(.{
+                .delay = delay,
+                .dur = dur,
+                .ease = b.ease,
+                .target = .{ .spritePos = .{
+                    .target = target,
+                    .from = null,
+                    .to = .{ toX, toY },
                 } },
             });
         }
