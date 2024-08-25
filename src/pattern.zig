@@ -13,18 +13,25 @@ pub fn invert(comptime original: Pattern) Pattern {
     }
 }
 
-pub fn transparent(comptime original: Pattern) Pattern {
-    comptime {
-        var ip = original;
-        for (ip[0..8], ip[8..16]) |color, *alpha| {
-            alpha.* = ~color;
-        }
-        return ip;
+pub fn whiteTransparent(original: Pattern) Pattern {
+    var ip = original;
+    for (ip[0..8], ip[8..16]) |color, *alpha| {
+        alpha.* = ~color;
     }
+    return ip;
+}
+
+pub fn blackTransparent(original: Pattern) Pattern {
+    var ip = original;
+    for (ip[0..8], ip[8..16]) |color, *alpha| {
+        alpha.* = color;
+    }
+    return ip;
 }
 
 pub const alphaMask = [1]u8{0xff} ** 8;
 
+pub const transparent = [1]u8{0} ** 16;
 pub const white = [8]u8{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } ++ alphaMask;
 pub const black = [8]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } ++ alphaMask;
 

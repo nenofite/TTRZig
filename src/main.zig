@@ -65,8 +65,9 @@ const TopState = union(enum) {
     pub fn init() !TopState {
         const arena = try SpriteArena.init(p.allocator);
         errdefer arena.deinit();
+        const main = try MainScreen.init();
         // return .{ .main = try MainScreen.init() };
-        return .{ .win = try WinScreen.init(arena) };
+        return .{ .win = try WinScreen.init(arena, main) };
     }
 
     pub fn deinit(self: *TopState) void {
