@@ -97,7 +97,7 @@ pub fn init() !*MainScreen {
     return self;
 }
 
-pub fn update(self: *MainScreen) !void {
+pub fn update(self: *MainScreen) void {
     const blimp = self.blimp.?;
     self.blimpState.update();
     self.score.update();

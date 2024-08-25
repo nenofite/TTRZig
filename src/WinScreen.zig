@@ -79,7 +79,7 @@ pub fn deinit(self: *WinScreen) void {
 
 pub fn update(self: *WinScreen) void {
     if (self.prev) |prev| {
-        try prev.update();
+        prev.update();
     }
     const active = self.arena.tweens.update();
     p.playdate.sprite.markDirty(self.backdrop);

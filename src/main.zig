@@ -79,7 +79,7 @@ const TopState = union(enum) {
 
     pub fn update(self: *TopState) !void {
         switch (self.*) {
-            .main => |main| try main.update(),
+            .main => |main| main.update(),
             .win => |win| win.update(),
         }
     }
