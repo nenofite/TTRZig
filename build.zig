@@ -15,13 +15,13 @@ pub fn build(b: *std.Build) !void {
 
     const comp_ldtk_step = b.addRunArtifact(comp_ldtk);
     comp_ldtk_step.addFileArg(b.path("src/levels.ldtk"));
-    const minlevels = comp_ldtk_step.addOutputFileArg("minlevels.txt");
+    const minlevelsDir = comp_ldtk_step.addOutputFileArg("levels");
 
     const writer = b.addWriteFiles();
     const source_dir = writer.getDirectory();
     writer.step.name = "write source directory";
 
-    _ = writer.addCopyFile(minlevels, "minlevels.txt");
+    _ = writer.addCopyDirectory(minlevelsDir, "levels", .{});
 
     const lib = b.addSharedLibrary(.{
         .name = "pdex",

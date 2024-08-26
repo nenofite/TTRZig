@@ -21,19 +21,15 @@ pub fn main() !void {
 
     var inputFile = try std.fs.cwd().openFile(inputPath, .{});
     defer inputFile.close();
-    var outputFile = try std.fs.cwd().createFile(outputPath, .{});
-    defer outputFile.close();
     const rawFile = try inputFile.readToEndAlloc(alloc, 1024 * 1024 * 1024);
     defer alloc.free(rawFile);
 
-    const result = try loadLevel(alloc, rawFile);
-    defer alloc.free(result);
+    try loadLevel(alloc, rawFile, outputPath);
 
-    try outputFile.writeAll(result);
     _ = try std.io.getStdOut().write("Completed write!\n");
 }
 
-fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
+fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8, path: []const u8) !void {
     var arena = std.heap.ArenaAllocator.init(parentAlloc);
     defer arena.deinit();
     const alloc = arena.allocator();
@@ -41,83 +37,79 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8) ![]u8 {
     var root = ldtk.parse(alloc, rawFile) catch @panic("Couldn't parse levels.ldtk");
     defer root.deinit();
 
-    const level: *ldtk.Level = forLevel: for (root.root.levels) |*l| {
-        if (std.mem.eql(u8, l.identifier, targetLevel)) {
-            break :forLevel l;
-        }
-    } else {
-        @panic("Could not find " ++ targetLevel);
-    };
+    var dir = try std.fs.cwd().makeOpenPath(path, .{});
+    defer dir.close();
 
-    const mainLayer: *ldtk.LayerInstance = forLayer: {
-        if (level.layerInstances) |layers| {
-            for (layers) |*l| {
-                if (l.autoLayerTiles.len > 0) {
-                    break :forLayer l;
+    for (root.root.levels, 0..) |*level, num| {
+        const mainLayer: *ldtk.LayerInstance = forLayer: {
+            if (level.layerInstances) |layers| {
+                for (layers) |*l| {
+                    if (l.autoLayerTiles.len > 0) {
+                        break :forLayer l;
+                    }
                 }
             }
+            @panic("Could not find auto layer tiles");
+        };
+
+        var filenameBuf = [1]u8{0} ** 64;
+        const filename = try std.fmt.bufPrint(&filenameBuf, "L{}.txt", .{num});
+        const file = try dir.createFile(filename, .{ .truncate = true });
+        defer file.close();
+
+        const resultWriter = file.writer();
+
+        const spawnPos = extractSpawnPosition(level);
+        try resultWriter.print("S {} {}\n", .{ spawnPos[0], spawnPos[1] });
+
+        try resultWriter.print("X {} {}\n", .{ level.pxWid, level.pxHei });
+
+        const coins = try extractEntityPositions(alloc, "Coin", level);
+        defer alloc.free(coins);
+        try resultWriter.print("C\n", .{});
+        for (coins) |coin| {
+            try resultWriter.print("{} {}\n", .{ coin[0], coin[1] });
         }
-        @panic("Could not find auto layer tiles");
-    };
 
-    var resultArr: std.ArrayList(u8) = std.ArrayList(u8).init(parentAlloc);
-    errdefer resultArr.deinit();
-    const resultWriter = resultArr.writer();
+        const arrows = try extractEntityPositions(alloc, "Arrow", level);
+        defer alloc.free(arrows);
+        try resultWriter.print("A\n", .{});
+        for (arrows) |arrow| {
+            try resultWriter.print("{} {}\n", .{ arrow[0], arrow[1] });
+        }
 
-    const spawnPos = extractSpawnPosition(level);
-    try resultWriter.print("S {} {}\n", .{ spawnPos[0], spawnPos[1] });
+        const goals = try extractEntityRects(alloc, "Goal", level);
+        defer alloc.free(goals);
+        try resultWriter.print("G\n", .{});
+        for (goals) |goal| {
+            try resultWriter.print("{} {} {} {}\n", .{ goal.x, goal.y, goal.width, goal.height });
+        }
 
-    try resultWriter.print("X {} {}\n", .{ level.pxWid, level.pxHei });
+        const wallIds = extractTileIDs(&root.root, "Wall");
+        const skipIds = extractTileIDs(&root.root, "Skip");
+        const spikeIds = extractTileIDs(&root.root, "Spike");
 
-    const coins = try extractEntityPositions(alloc, "Coin", level);
-    defer alloc.free(coins);
-    try resultWriter.print("C\n", .{});
-    for (coins) |coin| {
-        try resultWriter.print("{} {}\n", .{ coin[0], coin[1] });
+        const idToToken = [_]struct { ids: []const i64, token: []const u8 }{
+            .{ .ids = wallIds, .token = "W" },
+            .{ .ids = spikeIds, .token = "S" },
+        };
+
+        _ = try resultWriter.write("T\n");
+        for (mainLayer.autoLayerTiles) |tile| {
+            const x = tile.px[0];
+            const y = tile.px[1];
+            const shouldSkip = std.mem.indexOfScalar(i64, skipIds, tile.t) != null;
+            if (shouldSkip) continue;
+
+            const token = for (idToToken) |pair| {
+                if (std.mem.indexOfScalar(i64, pair.ids, tile.t) != null) {
+                    break pair.token;
+                }
+            } else "_";
+
+            try resultWriter.print("{} {} {s} {}\n", .{ x, y, token, tile.t });
+        }
     }
-
-    const arrows = try extractEntityPositions(alloc, "Arrow", level);
-    defer alloc.free(arrows);
-    try resultWriter.print("A\n", .{});
-    for (arrows) |arrow| {
-        try resultWriter.print("{} {}\n", .{ arrow[0], arrow[1] });
-    }
-
-    const goals = try extractEntityRects(alloc, "Goal", level);
-    defer alloc.free(goals);
-    try resultWriter.print("G\n", .{});
-    for (goals) |goal| {
-        try resultWriter.print("{} {} {} {}\n", .{ goal.x, goal.y, goal.width, goal.height });
-    }
-
-    const wallIds = extractTileIDs(&root.root, "Wall");
-    const skipIds = extractTileIDs(&root.root, "Skip");
-    const spikeIds = extractTileIDs(&root.root, "Spike");
-
-    const idToToken = [_]struct { ids: []const i64, token: []const u8 }{
-        .{ .ids = wallIds, .token = "W" },
-        .{ .ids = spikeIds, .token = "S" },
-    };
-
-    _ = try resultWriter.write("T\n");
-    for (mainLayer.autoLayerTiles) |tile| {
-        const x = tile.px[0];
-        const y = tile.px[1];
-        const shouldSkip = std.mem.indexOfScalar(i64, skipIds, tile.t) != null;
-        if (shouldSkip) continue;
-
-        const token = for (idToToken) |pair| {
-            if (std.mem.indexOfScalar(i64, pair.ids, tile.t) != null) {
-                break pair.token;
-            }
-        } else "_";
-
-        try resultWriter.print("{} {} {s} {}\n", .{ x, y, token, tile.t });
-    }
-
-    try resultWriter.print("Done!\n", .{});
-
-    return try resultArr.toOwnedSlice();
 }
 
 fn extractSpawnPosition(level: *const ldtk.Level) [2]i64 {
