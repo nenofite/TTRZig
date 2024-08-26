@@ -52,7 +52,7 @@ pub fn init() !*MainScreen {
     errdefer self.deinitAllEntities();
 
     var spawnCoords = [2]i32{ 0, 0 };
-    const level = try self.loadLevel(&spawnCoords);
+    const level = try self.loadLevel(0, &spawnCoords);
     errdefer self.arena.freeSprite(level);
 
     const blimp = try self.arena.newSprite();
@@ -193,10 +193,14 @@ fn deinitAllEntities(self: *MainScreen) void {
     self.arrows.clearAndFree();
 }
 
-fn loadLevel(self: *MainScreen, spawnCoords: *[2]i32) !*p.LCDSprite {
+fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
     const alloc = self.arena.alloc;
-    p.log("Loading file", .{});
-    const rawFile = loadWholeFile(alloc, "minlevels.txt") catch @panic("Couldn't load minlevels.txt");
+
+    var filenameBuf = [1]u8{0} ** 32;
+    const filename = try std.fmt.bufPrintZ(&filenameBuf, "levels/L{}.txt", .{num});
+
+    p.log("Loading file {s}", .{filename});
+    const rawFile = try loadWholeFile(alloc, filename);
     defer alloc.free(rawFile);
     p.log("File size: {any}", .{rawFile.len});
 
