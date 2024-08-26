@@ -16,6 +16,7 @@ const MainScreen = @import("MainScreen.zig");
 const WinScreen = @This();
 
 arena: *SpriteArena,
+levelNumber: u8,
 backdrop: *p.LCDSprite,
 title: *p.LCDSprite,
 titleImg: *p.LCDBitmap,
@@ -23,12 +24,21 @@ endedWithScore: u32,
 
 score: *Score,
 
-prev: ?*MainScreen,
+main: ?*MainScreen,
 
 backdropPattern: *const pat.Pattern = &pat.transparent,
 prevBackdropPattern: *const pat.Pattern = &pat.transparent,
 
-pub fn init(prev: *MainScreen) !*WinScreen {
+// const fadeSequence = [_]*const pat.Pattern{
+//     &pat.blackTransparent(pat.invert(pat.dot_2)),
+//     &pat.blackTransparent(pat.darkgray),
+//     &pat.blackTransparent(pat.darkgray_1),
+//     &pat.blackTransparent(pat.gray_5),
+//     &pat.blackTransparent(pat.lightgray),
+//     &pat.blackTransparent(pat.white),
+// };
+
+pub fn init(main: *MainScreen) !*WinScreen {
     const arena = try SpriteArena.init(p.allocator);
     errdefer arena.deinit();
 
@@ -41,8 +51,9 @@ pub fn init(prev: *MainScreen) !*WinScreen {
         .title = undefined,
         .titleImg = undefined,
         .score = undefined,
-        .prev = prev,
-        .endedWithScore = prev.score.score,
+        .main = main,
+        .endedWithScore = main.score.score,
+        .levelNumber = main.levelNumber,
     };
 
     self.backdrop = try arena.newSprite();
@@ -90,8 +101,8 @@ pub fn deinit(self: *WinScreen) void {
 }
 
 pub fn update(self: *WinScreen) void {
-    if (self.prev) |prev| {
-        _ = prev.update();
+    if (self.main) |main| {
+        _ = main.update();
     }
     _ = self.arena.tweens.update();
     self.score.update();
@@ -100,13 +111,24 @@ pub fn update(self: *WinScreen) void {
         self.prevBackdropPattern = self.backdropPattern;
         p.playdate.sprite.markDirty(self.backdrop);
     }
+
+    if (self.main == null and p.getButtonState().released.a) {
+        self.arena.tweens.finishClear();
+        self.loadNextLevel();
+        self.exitTween();
+    }
 }
 
-fn clearPrev(self: *WinScreen) void {
-    if (self.prev) |prev| {
-        prev.deinit();
-        self.prev = null;
+fn clearMain(self: *WinScreen) void {
+    if (self.main) |main| {
+        main.deinit();
+        self.main = null;
     }
+}
+
+fn loadNextLevel(self: *WinScreen) !void {
+    self.clearMain();
+    self.main = try MainScreen.init(self.levelNumber + 1);
 }
 
 fn entranceTween(self: *WinScreen) void {
@@ -126,7 +148,7 @@ fn entranceTween(self: *WinScreen) void {
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.white), 0);
     // b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.darkgray_2), 0);
 
-    b.of_callback(clearPrev, self, 0);
+    b.of_callback(clearMain, self, 0);
 
     b.wait(step);
 
@@ -139,6 +161,24 @@ fn entranceTween(self: *WinScreen) void {
     b.mode = .seq;
     b.of_discrete(u32, &self.score.score, self.endedWithScore, 0);
     // b.of_f32(&self.score.score, 0, self.endedWithScore, 1000, 0);
+}
+
+fn exitTween(self: *WinScreen) void {
+    const step = 100;
+    var b = self.arena.tweens.build();
+    b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.white), 0);
+    b.wait(step);
+    b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.lightgray), 0);
+    b.wait(step);
+    b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.gray_5), 0);
+    b.wait(step);
+    b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.darkgray_1), 0);
+    b.wait(step);
+    b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.darkgray), 0);
+    b.wait(step);
+    b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.invert(pat.dot_2)), 0);
+
+    b.of_callback(clearMain, self, 0);
 }
 
 fn drawBackdrop(sprite: ?*p.LCDSprite, bounds: p.PDRect, drawrect: p.PDRect) callconv(.C) void {

@@ -21,6 +21,7 @@ const WinScreen = @import("WinScreen.zig");
 const MainScreen = @This();
 
 arena: *SpriteArena,
+levelNumber: u8,
 blimp: ?*p.LCDSprite = null,
 blimpState: BlimpDynamics = undefined,
 haze: *Haze = undefined,
@@ -37,7 +38,7 @@ pub const Outcome = enum {
     won,
 };
 
-pub fn init() !*MainScreen {
+pub fn init(levelNumber: u8) !*MainScreen {
     const arena = try SpriteArena.init(p.allocator);
     errdefer arena.deinit();
 
@@ -48,11 +49,12 @@ pub fn init() !*MainScreen {
         .arena = arena,
         .coins = std.ArrayList(*Coin).init(arena.alloc),
         .arrows = std.ArrayList(*Arrow).init(arena.alloc),
+        .levelNumber = levelNumber,
     };
     errdefer self.deinitAllEntities();
 
     var spawnCoords = [2]i32{ 0, 0 };
-    const level = try self.loadLevel(0, &spawnCoords);
+    const level = try self.loadLevel(levelNumber, &spawnCoords);
     errdefer self.arena.freeSprite(level);
 
     const blimp = try self.arena.newSprite();
