@@ -75,12 +75,12 @@ pub fn deinit(self: *@This()) void {
     self.arena.freeSprite(self.sprite);
 
     const arena = self.arena;
-    arena.allocator().destroy(self);
+    arena.alloc.destroy(self);
     arena.deinit();
 }
 
 pub fn update(self: *@This(), focus: [2]i32) void {
-    _ = self.arena.wrappedNode.data.tweens.update();
+    _ = self.arena.tweens.update();
     const t = p.playdate.system.getCurrentTimeMilliseconds();
     const noiseOffset: f32 = @as(f32, @floatFromInt(t)) / 500;
     const flicker = perlin.noise(f32, .{ .x = noiseOffset }) * 0.1 + 0.9;

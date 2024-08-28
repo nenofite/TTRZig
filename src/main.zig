@@ -80,14 +80,14 @@ const TopState = union(enum) {
     pub fn update(self: *TopState) !void {
         switch (self.*) {
             .main => |main| {
-                main.update();
-                // switch (outcome) {
-                //     .none => {},
-                //     .won => {
-                //         const win = try WinScreen.init(main);
-                //         self.* = .{ .win = win };
-                //     },
-                // }
+                const outcome = main.update();
+                switch (outcome) {
+                    .none => {},
+                    .won => {
+                        const win = try WinScreen.init(main);
+                        self.* = .{ .win = win };
+                    },
+                }
             },
             .win => |win| win.update(),
         }
