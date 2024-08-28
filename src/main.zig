@@ -89,7 +89,16 @@ const TopState = union(enum) {
                     },
                 }
             },
-            .win => |win| win.update(),
+            .win => |win| {
+                switch (win.update()) {
+                    .none => {},
+                    .start => |main| {
+                        win.main = null;
+                        win.deinit();
+                        self.* = .{ .main = main };
+                    },
+                }
+            },
         }
     }
 };

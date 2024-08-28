@@ -29,6 +29,13 @@ main: ?*MainScreen,
 backdropPattern: *const pat.Pattern = &pat.transparent,
 prevBackdropPattern: *const pat.Pattern = &pat.transparent,
 
+shouldExit: bool = false,
+
+const Outcome = union(enum) {
+    none,
+    start: *MainScreen,
+};
+
 // const fadeSequence = [_]*const pat.Pattern{
 //     &pat.blackTransparent(pat.invert(pat.dot_2)),
 //     &pat.blackTransparent(pat.darkgray),
@@ -94,13 +101,14 @@ pub fn init(main: *MainScreen) !*WinScreen {
 
 pub fn deinit(self: *WinScreen) void {
     const arena = self.arena;
+    if (self.main) |main| main.deinit();
     arena.freeSprite(self.backdrop);
     arena.freeSprite(self.title);
     arena.alloc.destroy(self);
     arena.deinit();
 }
 
-pub fn update(self: *WinScreen) void {
+pub fn update(self: *WinScreen) Outcome {
     if (self.main) |main| {
         _ = main.update();
     }
@@ -117,6 +125,13 @@ pub fn update(self: *WinScreen) void {
         self.loadNextLevel() catch unreachable;
         self.exitTween();
     }
+
+    if (self.shouldExit) {
+        if (self.main) |main| {
+            return .{ .start = main };
+        }
+    }
+    return .none;
 }
 
 fn clearMain(self: *WinScreen) void {
@@ -177,8 +192,8 @@ fn exitTween(self: *WinScreen) void {
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.darkgray), 0);
     b.wait(step);
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.invert(pat.dot_2)), 0);
-
-    b.of_callback(clearMain, self, 0);
+    b.wait(step);
+    b.of_discrete(bool, &self.shouldExit, true, 0);
 }
 
 fn drawBackdrop(sprite: ?*p.LCDSprite, bounds: p.PDRect, drawrect: p.PDRect) callconv(.C) void {
