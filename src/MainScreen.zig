@@ -7,8 +7,8 @@ const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
 const tags = @import("tags.zig");
+const nodes = @import("nodes.zig");
 
-const SpriteArena = @import("SpriteArena.zig");
 const Arrow = @import("Arrow.zig");
 const Haze = @import("Haze.zig");
 const Camera = @import("Camera.zig");
@@ -17,10 +17,12 @@ const Coin = @import("Coin.zig");
 const Score = @import("Score.zig");
 const LevelParser = @import("LevelParser.zig");
 const WinScreen = @import("WinScreen.zig");
+const SpriteArena = @import("SpriteArena.zig");
 
 const MainScreen = @This();
 
-arena: *SpriteArena,
+arena: SpriteArena,
+nodeData: nodes.NodeData,
 levelNumber: u8,
 blimp: ?*p.LCDSprite = null,
 blimpState: BlimpDynamics = undefined,
@@ -33,22 +35,15 @@ score: *Score = undefined,
 
 const TILE_SIZE = 8;
 
-pub const Outcome = enum {
-    none,
-    won,
-};
-
 pub fn init(levelNumber: u8) !*MainScreen {
-    const arena = try SpriteArena.init(p.allocator);
-    errdefer arena.deinit();
-
-    const self = try arena.alloc.create(MainScreen);
-    errdefer arena.alloc.destroy(self);
+    const self = try nodes.Node(@This()).init(null);
+    errdefer nodes.Node(@This()).deinit(self);
 
     self.* = .{
-        .arena = arena,
-        .coins = std.ArrayList(*Coin).init(arena.alloc),
-        .arrows = std.ArrayList(*Arrow).init(arena.alloc),
+        .nodeData = self.nodeData,
+        .arena = SpriteArena.fromNode(nodes.Node(@This()).asAny(self)),
+        .coins = std.ArrayList(*Coin).init(self.nodeData.alloc),
+        .arrows = std.ArrayList(*Arrow).init(self.nodeData.alloc),
         .levelNumber = levelNumber,
     };
     errdefer self.deinitAllEntities();
@@ -64,7 +59,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
     self.haze = try Haze.init(self.arena);
     errdefer self.haze.deinit();
 
-    self.score = try Score.init(arena, .score);
+    self.score = try Score.init(self.nodeData.alloc, .score);
     errdefer self.score.deinit();
 
     self.ballastGauge = try Gauge.init(self.arena, .{
@@ -104,12 +99,10 @@ pub fn init(levelNumber: u8) !*MainScreen {
     return self;
 }
 
-pub fn update(self: *MainScreen) Outcome {
+pub fn update(self: *MainScreen) void {
     const blimp = self.blimp.?;
     self.blimpState.update();
     self.score.update();
-
-    var outcome = Outcome.none;
 
     const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
     if (collisionsOpt) |collisions| {
@@ -127,7 +120,6 @@ pub fn update(self: *MainScreen) Outcome {
                 },
                 tags.goal => {
                     p.log("Goal!", .{});
-                    outcome = .won;
                 },
                 tags.spike => {
                     p.log("Ouch!", .{});
@@ -169,18 +161,14 @@ pub fn update(self: *MainScreen) Outcome {
         @as(i32, @intFromFloat(self.blimpState.x)) + offset[0],
         @as(i32, @intFromFloat(self.blimpState.y)) + offset[1],
     });
-
-    return outcome;
 }
 
 pub fn deinit(self: *MainScreen) void {
-    const arena = self.arena;
     self.haze.deinit();
     self.ballastGauge.deinit();
     self.score.deinit();
     self.deinitAllEntities();
-    arena.alloc.destroy(self);
-    arena.deinit();
+    nodes.Node(@This()).deinit(self);
 }
 
 fn deinitAllEntities(self: *MainScreen) void {
@@ -196,7 +184,7 @@ fn deinitAllEntities(self: *MainScreen) void {
 }
 
 fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
-    const alloc = self.arena.alloc;
+    const alloc = self.nodeData.alloc;
 
     var filenameBuf = [1]u8{0} ** 32;
     const filename = try std.fmt.bufPrintZ(&filenameBuf, "levels/L{}.txt", .{num});
@@ -303,7 +291,7 @@ fn addTile(self: *MainScreen, x: i32, y: i32, tileId: i32, token: u8) !void {
 }
 
 fn addCoin(self: *MainScreen, x: i32, y: i32) !*Coin {
-    const coin = try Coin.init(self.arena, @floatFromInt(x), @floatFromInt(y));
+    const coin = try Coin.init(nodes.Node(@This()).asAny(self), @floatFromInt(x), @floatFromInt(y));
     errdefer coin.deinit();
 
     try self.coins.append(coin);
@@ -313,7 +301,7 @@ fn addCoin(self: *MainScreen, x: i32, y: i32) !*Coin {
 }
 
 fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {
-    const arrow = try Arrow.init(self.arena, @floatFromInt(x), @floatFromInt(y));
+    const arrow = try Arrow.init(&self.arena, @floatFromInt(x), @floatFromInt(y));
     errdefer arrow.deinit();
 
     try self.arrows.append(arrow);

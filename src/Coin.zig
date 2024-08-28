@@ -4,29 +4,25 @@ const tween = @import("tween.zig");
 const pat = @import("pattern.zig");
 const images = @import("images.zig");
 const tags = @import("tags.zig");
-
-const SpriteArena = @import("SpriteArena.zig");
+const nodes = @import("nodes.zig");
 
 const Coin = @This();
 
-arena: *SpriteArena,
+nodeData: nodes.NodeData,
 sprite: *p.LCDSprite,
 
-pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Coin {
-    const arena = try parent.newChild();
-    errdefer arena.deinit();
+pub fn init(parent: nodes.AnyNode, x: f32, y: f32) !*Coin {
+    const self = try nodes.Node(@This()).init(parent);
+    errdefer nodes.Node(@This()).deinit(self);
 
-    const self = try arena.alloc.create(Coin);
-    errdefer arena.alloc.destroy(self);
-
-    const sprite = try arena.newSprite();
-    errdefer arena.freeSprite(sprite);
+    const sprite = try self.nodeData.newSprite();
+    errdefer self.nodeData.freeSprite(sprite);
 
     p.playdate.sprite.setTag(sprite, tags.coin);
     p.playdate.sprite.setCollideRect(sprite, .{ .x = 0, .y = 0, .width = 8, .height = 8 });
 
     self.* = .{
-        .arena = arena,
+        .nodeData = self.nodeData,
         .sprite = sprite,
     };
 
@@ -39,10 +35,8 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Coin {
 }
 
 pub fn deinit(self: *Coin) void {
-    const arena = self.arena;
-    arena.freeSprite(self.sprite);
-    arena.alloc.destroy(self);
-    arena.deinit();
+    self.nodeData.freeSprite(self.sprite);
+    nodes.Node(@This()).deinit(self);
 }
 
 fn setPhaseImg(self: *Coin) void {

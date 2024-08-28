@@ -7,32 +7,32 @@ pub const AnyNode = struct {
     data: *NodeData,
     vtable: *const VTable,
 
-    pub fn update(self: *AnyNode) void {
-        self.vtable.update(self.head);
+    pub fn update(self: *const AnyNode) void {
+        self.vtable.update(self.node);
     }
 
-    pub fn deinit(self: *AnyNode) void {
+    pub fn deinit(self: *const AnyNode) void {
         // const arena = self.arena;
-        self.vtable.deinit(self.head);
+        self.vtable.deinit(self.node);
         // arena.alloc.destroy(self);
         // arena.deinit();
     }
 
     const VTable = struct {
-        update: *const fn (head: *anyopaque) void,
-        deinit: *const fn (head: *anyopaque) void,
+        update: *const fn (node: *anyopaque) void,
+        deinit: *const fn (node: *anyopaque) void,
     };
 
-    pub fn attachChild(self: *AnyNode, child: AnyNode) !void {
+    pub fn attachChild(self: *const AnyNode, child: AnyNode) !void {
         std.debug.assert(child.data.parent == null);
         try self.data.children.append(child);
         errdefer _ = self.data.children.pop();
 
-        child.data.parent = self;
+        child.data.parent = self.*;
     }
 
-    pub fn detachChild(self: *AnyNode, child: AnyNode) void {
-        std.debug.assert(child.data.parent == self);
+    pub fn detachChild(self: *const AnyNode, child: AnyNode) void {
+        std.debug.assert(child.data.parent.?.node == self.node);
         const i = for (self.data.children.items, 0..) |c, ci| {
             if (c.node == child.node) {
                 break ci;
@@ -47,8 +47,8 @@ pub const AnyNode = struct {
 };
 
 pub const NodeData = struct {
-    parent: ?*AnyNode,
-    children: std.ArrayList(*AnyNode),
+    parent: ?AnyNode,
+    children: std.ArrayList(AnyNode),
 
     alloc_inner: TrackedAllocator,
     alloc: std.mem.Allocator,
@@ -64,7 +64,7 @@ pub const NodeData = struct {
 
         self.* = .{
             .parent = null,
-            .children = std.ArrayList(*AnyNode).init(self.alloc),
+            .children = std.ArrayList(AnyNode).init(self.alloc),
             .sprites = std.ArrayList(*p.LCDSprite).init(self.alloc),
             .tweens = tweens,
             .alloc_inner = self.alloc_inner,
@@ -114,7 +114,7 @@ pub fn Node(comptime Head: type) type {
         // Allocates the node, initializes its NodeData, and attaches it to the
         // parent. This does not call `Head.init`; instead, this function should
         // be called by that function
-        pub fn init(parentOpt: ?*AnyNode) !*Head {
+        pub fn init(parentOpt: ?AnyNode) !*Head {
             const parentAlloc = p.allocator;
 
             const node = try parentAlloc.create(Head);
@@ -122,11 +122,11 @@ pub fn Node(comptime Head: type) type {
 
             const nodeData: *NodeData = &node.nodeData;
 
-            try nodeData.init(parentAlloc);
+            try nodeData.init();
             errdefer nodeData.deinit();
 
             if (parentOpt) |parent| {
-                try parent.attachChild(node.asAny());
+                try parent.attachChild(asAny(node));
             }
 
             return node;
@@ -137,7 +137,7 @@ pub fn Node(comptime Head: type) type {
         pub fn deinit(self: *Head) void {
             const nodeData: *NodeData = &self.nodeData;
             if (nodeData.parent) |parent| {
-                parent.detachChild(self.asAny());
+                parent.detachChild(asAny(self));
             }
             std.debug.assert(nodeData.parent == null);
             nodeData.deinit();

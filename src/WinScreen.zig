@@ -96,7 +96,7 @@ pub fn deinit(self: *WinScreen) void {
     const arena = self.arena;
     arena.freeSprite(self.backdrop);
     arena.freeSprite(self.title);
-    arena.alloc.destroy(self);
+    arena.allocator().destroy(self);
     arena.deinit();
 }
 
@@ -104,7 +104,7 @@ pub fn update(self: *WinScreen) void {
     if (self.main) |main| {
         _ = main.update();
     }
-    _ = self.arena.tweens.update();
+    _ = self.arena.wrappedNode.data.tweens.update();
     self.score.update();
 
     if (self.backdropPattern != self.prevBackdropPattern) {
@@ -113,8 +113,8 @@ pub fn update(self: *WinScreen) void {
     }
 
     if (self.main == null and p.getButtonState().released.a) {
-        self.arena.tweens.finishClear();
-        self.loadNextLevel();
+        self.arena.wrappedNode.data.tweens.finishClear();
+        self.loadNextLevel() catch unreachable;
         self.exitTween();
     }
 }

@@ -98,7 +98,7 @@ pub fn deinit(self: *Gauge) void {
     p.playdate.graphics.freeBitmap(self.img);
     p.playdate.graphics.freeBitmap(self.baseImg);
     arena.freeSprite(self.sprite);
-    arena.alloc.destroy(self);
+    arena.allocator().destroy(self);
     arena.deinit();
 }
 

@@ -51,14 +51,14 @@ pub fn init(parentArena: *SpriteArena, z: p.Z) !*Score {
 pub fn deinit(self: *Score) void {
     const arena = self.arena;
     arena.freeSprite(self.sprite);
-    arena.alloc.destroy(self);
+    arena.allocator().destroy(self);
     arena.deinit();
 }
 
 pub fn update(self: *Score) void {
     self.tweenScore();
     const prevScoreF = self.scoreF;
-    _ = self.arena.tweens.update();
+    _ = self.arena.wrappedNode.data.tweens.update();
     // self.scoreF = std.math.lerp(self.scoreF, @as(f32, @floatFromInt(self.score)), 0.05);
     const roundCmp = @round(self.scoreF) - @round(prevScoreF);
     if (roundCmp > 0) {
@@ -73,8 +73,8 @@ fn tweenScore(self: *Score) void {
     if (self.score == self.prevScore) return;
 
     self.prevScore = self.score;
-    self.arena.tweens.cancelClear();
-    var b = self.arena.tweens.build();
+    self.arena.wrappedNode.data.tweens.cancelClear();
+    var b = self.arena.wrappedNode.data.tweens.build();
     b.ease = .{ .curve = .cubic, .ends = .out };
     b.of_f32(&self.scoreF, null, @floatFromInt(self.score), 1000, 0);
 }
