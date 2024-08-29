@@ -29,7 +29,7 @@ pub const Target = union(enum) {
     spritePos: struct {
         target: *p.LCDSprite,
         from: ?[2]f32,
-        to: [2]f32,
+        to: [2]?f32,
     },
     callback: struct {
         ctx: *anyopaque,
@@ -65,8 +65,10 @@ pub const Target = union(enum) {
                     t.from = from_;
                     break :calcFrom from_;
                 };
-                const diffX = t.to[0] - from[0];
-                const diffY = t.to[1] - from[1];
+                const toX = t.to[0] orelse from[0];
+                const toY = t.to[1] orelse from[1];
+                const diffX = toX - from[0];
+                const diffY = toY - from[1];
                 p.playdate.sprite.moveTo(t.target, from[0] + f * diffX, from[1] + f * diffY);
             },
         }
@@ -91,7 +93,10 @@ pub const Target = union(enum) {
                 @memcpy(t.target, t.to);
             },
             .spritePos => |t| {
-                p.playdate.sprite.moveTo(t.target, t.to[0], t.to[1]);
+                var curX: f32 = 0;
+                var curY: f32 = 0;
+                p.playdate.sprite.getPosition(t.target, &curX, &curY);
+                p.playdate.sprite.moveTo(t.target, t.to[0] orelse curX, t.to[1] orelse curY);
             },
             .callback => |t| {
                 t.func(t.ctx);
@@ -338,7 +343,7 @@ pub const List = struct {
             });
         }
 
-        pub fn of_sprite_pos(b: *Builder, target: *p.LCDSprite, toX: f32, toY: f32, dur: u32, delay: u32) void {
+        pub fn of_sprite_pos(b: *Builder, target: *p.LCDSprite, toX: ?f32, toY: ?f32, dur: u32, delay: u32) void {
             b.append(.{
                 .delay = delay,
                 .dur = dur,

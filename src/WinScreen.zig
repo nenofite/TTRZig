@@ -31,7 +31,14 @@ main: ?*MainScreen,
 backdropPattern: *const pat.Pattern = &pat.transparent,
 prevBackdropPattern: *const pat.Pattern = &pat.transparent,
 
-shouldExit: bool = false,
+tweenAction: TweenAction = .none,
+
+const TweenAction = enum {
+    none,
+    loadNext,
+    clearMain,
+    exit,
+};
 
 const Outcome = union(enum) {
     none,
@@ -100,7 +107,7 @@ pub fn init(main: *MainScreen) !*WinScreen {
 
     p.playdate.sprite.setImage(self.continuePrompt, self.continuePromptImg, .BitmapUnflipped);
     p.playdate.sprite.setCenter(self.continuePrompt, 1, 1);
-    p.playdate.sprite.moveTo(self.continuePrompt, p.WIDTH - 5, p.HEIGHT - 5);
+    p.playdate.sprite.moveTo(self.continuePrompt, p.WIDTH - 5, p.HEIGHT + 50);
     p.setZIndex(self.continuePrompt, .winScore);
     p.playdate.sprite.addSprite(self.continuePrompt);
 
@@ -137,15 +144,19 @@ pub fn update(self: *WinScreen) Outcome {
 
     if (self.main == null and p.getButtonState().released.a) {
         self.arena.tweens.finishClear();
-        self.loadNextLevel() catch unreachable;
         self.exitTween();
     }
 
-    if (self.shouldExit) {
-        if (self.main) |main| {
-            return .{ .start = main };
-        }
+    switch (self.tweenAction) {
+        .none => {},
+        .clearMain => self.clearMain(),
+        .loadNext => self.loadNextLevel() catch unreachable,
+        .exit => {
+            return .{ .start = self.main.? };
+        },
     }
+    self.tweenAction = .none;
+
     return .none;
 }
 
@@ -178,7 +189,8 @@ fn entranceTween(self: *WinScreen) void {
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.white), 0);
     // b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.darkgray_2), 0);
 
-    b.of_callback(clearMain, self, 0);
+    // b.of_callback(clearMain, self, 0);
+    b.of_discrete(TweenAction, &self.tweenAction, .clearMain, 0);
 
     b.wait(step);
 
@@ -190,12 +202,26 @@ fn entranceTween(self: *WinScreen) void {
 
     b.mode = .seq;
     b.of_discrete(u32, &self.score.score, self.endedWithScore, 0);
+
+    b.wait(500);
+    b.of_sprite_pos(self.continuePrompt, null, p.HEIGHT - 5, 400, 0);
+
     // b.of_f32(&self.score.score, 0, self.endedWithScore, 1000, 0);
 }
 
 fn exitTween(self: *WinScreen) void {
+    self.arena.tweens.finishClear();
     const step = 100;
     var b = self.arena.tweens.build();
+
+    b.ease = .{ .curve = .cubic, .ends = .in };
+    b.mode = .par;
+    b.of_sprite_pos(self.title, null, -50, 400, 0);
+    b.of_sprite_pos(self.score.sprite, null, -50, 400, 0);
+    b.of_sprite_pos(self.continuePrompt, null, p.HEIGHT + 50, 400, 0);
+
+    b.mode = .seq;
+    b.of_discrete(TweenAction, &self.tweenAction, .loadNext, 0);
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.white), 0);
     b.wait(step);
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.lightgray), 0);
@@ -208,7 +234,7 @@ fn exitTween(self: *WinScreen) void {
     b.wait(step);
     b.of_discrete(*const pat.Pattern, &self.backdropPattern, &comptime pat.blackTransparent(pat.invert(pat.dot_2)), 0);
     b.wait(step);
-    b.of_discrete(bool, &self.shouldExit, true, 0);
+    b.of_discrete(TweenAction, &self.tweenAction, .exit, 0);
 }
 
 fn drawBackdrop(sprite: ?*p.LCDSprite, bounds: p.PDRect, drawrect: p.PDRect) callconv(.C) void {
