@@ -93,7 +93,7 @@ pub fn init(main: *MainScreen) !*WinScreen {
     self.score = try Score.init(arena, .winScore);
     errdefer self.score.deinit();
 
-    self.continuePromptImg = try text_sprite.makeTextBmp("CONTINUE", images.geo, 2);
+    self.continuePromptImg = try text_sprite.makeMixedBmp(&.{ .{ .text = "CONTINUE " }, .{ .icon = .alphaA } }, images.geo, 2);
     errdefer p.playdate.graphics.freeBitmap(self.continuePromptImg);
 
     self.continuePrompt = try arena.newSprite(true);
