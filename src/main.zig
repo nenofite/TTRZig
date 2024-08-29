@@ -47,8 +47,7 @@ fn init(pd_: *p.PlaydateAPI) void {
     icons.init();
     sounds.init();
     p.playdate.display.setRefreshRate(tween.framerate);
-    const allocd: ?*TopState = @ptrCast(@alignCast(p.playdate.system.realloc(null, @sizeOf(TopState))));
-    state = allocd.?;
+    state = p.allocator.create(TopState) catch unreachable;
     state.* = TopState.init() catch unreachable; //@panic("Could not init TopState");
     p.log("Finished setup", .{});
 }
