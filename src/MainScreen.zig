@@ -402,8 +402,11 @@ fn removeCoin(self: *MainScreen, coin: *Coin) void {
 const BlimpDynamics = struct {
     const neutralBallast = 500;
     const maxBallast = 2 * neutralBallast;
-    const ticks = 10;
+    const maxXAccel = 2.0 / @as(comptime_float, @floatFromInt(tween.framerate));
+    const maxYAccel = 2.0 / @as(comptime_float, @floatFromInt(tween.framerate));
+    const ticks = 4;
     const tickSoundSpacing = @divExact(maxBallast, ticks);
+    const crankDegsPerNeutral = 180;
 
     x: f32,
     y: f32,
@@ -422,7 +425,7 @@ const BlimpDynamics = struct {
         self.velY += @sin(@as(f32, @floatFromInt(self.t)) / 50 * 6) * 0.01;
 
         const crankChange = p.playdate.system.getCrankChange();
-        const ballastChange: i32 = @intFromFloat(crankChange / 360 * neutralBallast);
+        const ballastChange: i32 = @intFromFloat(crankChange / crankDegsPerNeutral * neutralBallast);
         self.ballastCrank +|= ballastChange;
         while (self.ballastCrank >= tickSoundSpacing) {
             self.ballastCrank -|= tickSoundSpacing;
@@ -438,17 +441,16 @@ const BlimpDynamics = struct {
         self.ballast = std.math.clamp(self.ballast, 0, maxBallast);
 
         const btns = p.getButtonState();
-        const accel = 2.0 / @as(comptime_float, @floatFromInt(tween.framerate));
         if (btns.current.left) {
-            self.velX += -accel;
+            self.velX += -maxXAccel;
         } else if (btns.current.right) {
-            self.velX += accel;
+            self.velX += maxXAccel;
         }
 
         const diff = neutralBallast - self.ballast;
         const unclampedRatio = @as(f32, @floatFromInt(diff)) / @as(f32, @floatFromInt(neutralBallast));
         const ratio = std.math.clamp(unclampedRatio, -1, 1);
-        self.velY += ratio * 0.1;
+        self.velY += ratio * maxYAccel;
 
         self.x += self.velX;
         self.y += self.velY;
