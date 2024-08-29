@@ -116,6 +116,9 @@ pub fn update(self: *MainScreen) Outcome {
         // defer p.allocator.free(collisions);
         defer _ = p.playdate.system.realloc(collisions.ptr, 0);
 
+        var coinsToFree = std.ArrayList(*Coin).init(self.arena.alloc);
+        defer coinsToFree.deinit();
+
         for (collisions) |collision| {
             const otherTag = p.playdate.sprite.getTag(collision.other.?);
             switch (otherTag) {
@@ -123,6 +126,7 @@ pub fn update(self: *MainScreen) Outcome {
                     p.log("Got a coin!", .{});
                     if (self.findCoinOfSprite(collision.other.?)) |coin| {
                         self.onHitCoin(coin);
+                        coinsToFree.append(coin) catch unreachable;
                     }
                 },
                 tags.goal => {
@@ -149,6 +153,10 @@ pub fn update(self: *MainScreen) Outcome {
                     self.blimpState.velY = newVelY;
                 },
             }
+        }
+
+        for (coinsToFree.items) |coin| {
+            self.removeCoin(coin);
         }
     }
     self.camera.update(self.blimpState.x, self.blimpState.y);
@@ -376,8 +384,8 @@ fn addGoalSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
 }
 
 fn onHitCoin(self: *MainScreen, coin: *Coin) void {
+    _ = coin;
     sounds.playOnce(sounds.coin);
-    self.removeCoin(coin);
     self.score.score +|= 5;
 }
 
@@ -395,6 +403,7 @@ fn removeCoin(self: *MainScreen, coin: *Coin) void {
         _ = self.coins.swapRemove(idx);
     } else {
         p.softFail("Coin not in list");
+        return;
     }
     coin.deinit();
 }
