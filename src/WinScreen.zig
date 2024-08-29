@@ -21,6 +21,8 @@ backdrop: *p.LCDSprite,
 title: *p.LCDSprite,
 titleImg: *p.LCDBitmap,
 endedWithScore: u32,
+continuePrompt: *p.LCDSprite,
+continuePromptImg: *p.LCDBitmap,
 
 score: *Score,
 
@@ -57,6 +59,8 @@ pub fn init(main: *MainScreen) !*WinScreen {
         .backdrop = undefined,
         .title = undefined,
         .titleImg = undefined,
+        .continuePrompt = undefined,
+        .continuePromptImg = undefined,
         .score = undefined,
         .main = main,
         .endedWithScore = main.score.score,
@@ -91,6 +95,18 @@ pub fn init(main: *MainScreen) !*WinScreen {
     self.score = try Score.init(arena, .winScore);
     errdefer self.score.deinit();
 
+    self.continuePromptImg = try text_sprite.makeTextBmp("CONTINUE", images.geo, 2);
+    errdefer p.playdate.graphics.freeBitmap(self.continuePromptImg);
+
+    self.continuePrompt = try arena.newSprite();
+
+    p.playdate.sprite.setImage(self.continuePrompt, self.continuePromptImg, .BitmapUnflipped);
+    p.playdate.sprite.setCenter(self.continuePrompt, 1, 1);
+    p.playdate.sprite.moveTo(self.continuePrompt, p.WIDTH - 5, p.HEIGHT - 5);
+    p.setZIndex(self.continuePrompt, .winScore);
+    p.playdate.sprite.setIgnoresDrawOffset(self.continuePrompt, 1);
+    p.playdate.sprite.addSprite(self.continuePrompt);
+
     p.playdate.sprite.setCenter(self.score.sprite, 0.5, 0);
     p.playdate.sprite.moveTo(self.score.sprite, p.WIDTH / 2, p.HEIGHT + 50);
 
@@ -102,8 +118,10 @@ pub fn init(main: *MainScreen) !*WinScreen {
 pub fn deinit(self: *WinScreen) void {
     const arena = self.arena;
     if (self.main) |main| main.deinit();
-    arena.freeSprite(self.backdrop);
-    arena.freeSprite(self.title);
+    // arena.freeSprite(self.backdrop);
+    // arena.freeSprite(self.title);
+    p.playdate.graphics.freeBitmap(self.titleImg);
+    p.playdate.graphics.freeBitmap(self.continuePromptImg);
     arena.alloc.destroy(self);
     arena.deinit();
 }
