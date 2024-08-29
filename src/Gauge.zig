@@ -49,7 +49,7 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
     const self = try arena.alloc.create(Gauge);
     errdefer arena.alloc.destroy(self);
 
-    const sprite = try arena.newSprite();
+    const sprite = try arena.newSprite(true);
     errdefer arena.freeSprite(sprite);
 
     const img = p.playdate.graphics.newBitmap(
@@ -69,7 +69,6 @@ pub fn init(parentArena: *SpriteArena, options: Options) !*Gauge {
     p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
     p.playdate.sprite.moveTo(sprite, options.cx, options.cy);
     p.setZIndex(sprite, options.z);
-    p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
 
     const startAngle = options.minAngle;

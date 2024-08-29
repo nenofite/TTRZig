@@ -19,7 +19,7 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Coin {
     const self = try arena.alloc.create(Coin);
     errdefer arena.alloc.destroy(self);
 
-    const sprite = try arena.newSprite();
+    const sprite = try arena.newSprite(false);
     errdefer arena.freeSprite(sprite);
 
     p.playdate.sprite.setTag(sprite, tags.coin);

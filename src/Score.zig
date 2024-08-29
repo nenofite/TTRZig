@@ -28,14 +28,13 @@ pub fn init(parentArena: *SpriteArena, z: p.Z) !*Score {
     const self = try arena.alloc.create(Score);
     errdefer arena.alloc.destroy(self);
 
-    const sprite = try arena.newSprite();
+    const sprite = try arena.newSprite(true);
     errdefer arena.freeSprite(sprite);
 
     p.playdate.sprite.setCenter(sprite, 1, 0);
     p.playdate.sprite.moveTo(sprite, p.WIDTH, p.HEIGHT / 2);
     p.playdate.sprite.setSize(sprite, 3 * digitSize + 2 * margin, digitSize + 2 * margin);
     p.setZIndex(sprite, z);
-    p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     p.playdate.sprite.addSprite(sprite);
     p.playdate.sprite.setUserdata(sprite, @ptrCast(self));
     p.playdate.sprite.setDrawFunction(sprite, drawCallback);

@@ -84,12 +84,13 @@ pub fn newChild(self: *SpriteArena) !*SpriteArena {
     return child;
 }
 
-pub fn newSprite(self: *SpriteArena) !*p.LCDSprite {
+pub fn newSprite(self: *SpriteArena, ignoreDrawOffset: bool) !*p.LCDSprite {
     const sprite = p.playdate.sprite.newSprite() orelse return error.CannotAllocateSprite;
     errdefer p.playdate.sprite.freeSprite(sprite);
 
-    const slot = try self.sprites.addOne();
-    slot.* = sprite;
+    try self.sprites.append(sprite);
+
+    p.playdate.sprite.setIgnoresDrawOffset(sprite, @intFromBool(ignoreDrawOffset));
     return sprite;
 }
 

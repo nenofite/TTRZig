@@ -42,7 +42,7 @@ pub fn init(parentArena: *SpriteArena) !*@This() {
     const self = try arena.alloc.create(@This());
     errdefer arena.alloc.destroy(self);
 
-    const sprite = try arena.newSprite();
+    const sprite = try arena.newSprite(true);
     errdefer arena.freeSprite(sprite);
 
     const spriteImg = p.playdate.graphics.newBitmap(p.WIDTH, p.HEIGHT, @intFromEnum(p.LCDSolidColor.ColorWhite)) orelse
@@ -60,7 +60,6 @@ pub fn init(parentArena: *SpriteArena) !*@This() {
     p.playdate.sprite.setCenter(sprite, 0, 0);
     p.setZIndex(sprite, .haze);
     p.playdate.sprite.setOpaque(sprite, 0);
-    p.playdate.sprite.setIgnoresDrawOffset(sprite, 1);
     _ = p.playdate.sprite.setDrawMode(sprite, .DrawModeWhiteTransparent);
     // p.playdate.sprite.setDrawFunction(sprite, drawSprite);
     p.playdate.sprite.addSprite(sprite);

@@ -57,7 +57,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
     const level = try self.loadLevel(levelNumber, &spawnCoords);
     errdefer self.arena.freeSprite(level);
 
-    const blimp = try self.arena.newSprite();
+    const blimp = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(blimp);
     self.blimp = blimp;
 
@@ -248,7 +248,7 @@ fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
     const levelImg = p.playdate.graphics.newBitmap(dims.width, dims.height, @intFromEnum(p.LCDSolidColor.ColorBlack)) orelse @panic("Can't make level bitmap");
     errdefer p.playdate.graphics.freeBitmap(levelImg);
 
-    const levelSprite = try self.arena.newSprite();
+    const levelSprite = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(levelSprite);
 
     // Draw bitmap
@@ -323,7 +323,7 @@ fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {
 }
 
 fn addWallCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
-    const sprite = try self.arena.newSprite();
+    const sprite = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(sprite);
     const x = rect.x;
     const y = rect.y;
@@ -340,7 +340,7 @@ fn addWallCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
 }
 
 fn addSpikeCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
-    const sprite = try self.arena.newSprite();
+    const sprite = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(sprite);
     const x = rect.x;
     const y = rect.y;
@@ -358,7 +358,7 @@ fn addSpikeCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
 }
 
 fn addGoalSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
-    const sprite = try self.arena.newSprite();
+    const sprite = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(sprite);
     const x = rect.x;
     const y = rect.y;

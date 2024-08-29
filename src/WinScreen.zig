@@ -67,7 +67,7 @@ pub fn init(main: *MainScreen) !*WinScreen {
         .levelNumber = main.levelNumber,
     };
 
-    self.backdrop = try arena.newSprite();
+    self.backdrop = try arena.newSprite(true);
     errdefer arena.freeSprite(self.backdrop);
 
     p.playdate.sprite.setBounds(self.backdrop, .{ .x = 0, .y = 0, .width = p.WIDTH, .height = p.HEIGHT });
@@ -75,20 +75,18 @@ pub fn init(main: *MainScreen) !*WinScreen {
     // _ = p.playdate.sprite.setDrawMode(self.backdrop, .DrawModeBlackTransparent);
     p.playdate.sprite.setUserdata(self.backdrop, self);
     p.playdate.sprite.setDrawFunction(self.backdrop, drawBackdrop);
-    p.playdate.sprite.setIgnoresDrawOffset(self.backdrop, 1);
     p.setZIndex(self.backdrop, .winBackdrop);
     p.playdate.sprite.addSprite(self.backdrop);
 
     self.titleImg = try text_sprite.makeTextBmp("Glorious!", images.mans, 4);
     errdefer p.playdate.graphics.freeBitmap(self.titleImg);
 
-    self.title = try arena.newSprite();
+    self.title = try arena.newSprite(true);
     errdefer arena.freeSprite(self.title);
 
     p.playdate.sprite.setImage(self.title, self.titleImg, .BitmapUnflipped);
     p.playdate.sprite.setCenter(self.title, 0.5, 0.5);
     p.playdate.sprite.moveTo(self.title, p.WIDTH / 2, p.HEIGHT + 50);
-    p.playdate.sprite.setIgnoresDrawOffset(self.title, 1);
     p.setZIndex(self.title, .winTitle);
     p.playdate.sprite.addSprite(self.title);
 
@@ -98,13 +96,12 @@ pub fn init(main: *MainScreen) !*WinScreen {
     self.continuePromptImg = try text_sprite.makeTextBmp("CONTINUE", images.geo, 2);
     errdefer p.playdate.graphics.freeBitmap(self.continuePromptImg);
 
-    self.continuePrompt = try arena.newSprite();
+    self.continuePrompt = try arena.newSprite(true);
 
     p.playdate.sprite.setImage(self.continuePrompt, self.continuePromptImg, .BitmapUnflipped);
     p.playdate.sprite.setCenter(self.continuePrompt, 1, 1);
     p.playdate.sprite.moveTo(self.continuePrompt, p.WIDTH - 5, p.HEIGHT - 5);
     p.setZIndex(self.continuePrompt, .winScore);
-    p.playdate.sprite.setIgnoresDrawOffset(self.continuePrompt, 1);
     p.playdate.sprite.addSprite(self.continuePrompt);
 
     p.playdate.sprite.setCenter(self.score.sprite, 0.5, 0);

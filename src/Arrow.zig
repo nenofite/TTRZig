@@ -24,7 +24,7 @@ pub fn init(parentArena: *SpriteArena, x: f32, y: f32) !*@This() {
         .sprite = undefined,
     };
 
-    self.sprite = try arena.newSprite();
+    self.sprite = try arena.newSprite(false);
     errdefer arena.freeSprite(self.sprite);
 
     self.updateImage();
