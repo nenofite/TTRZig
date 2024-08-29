@@ -66,8 +66,8 @@ const TopState = union(enum) {
         const main = try MainScreen.init(0);
         errdefer main.deinit();
 
-        // return .{ .main = main };
-        return .{ .win = try WinScreen.init(main) };
+        return .{ .main = main };
+        // return .{ .win = try WinScreen.init(main) };
     }
 
     pub fn deinit(self: *TopState) void {
