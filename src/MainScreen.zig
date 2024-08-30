@@ -24,6 +24,7 @@ arena: *SpriteArena,
 levelNumber: u8,
 blimp: ?*p.LCDSprite = null,
 leftBlow: ?*p.LCDSprite = null,
+rightBlow: ?*p.LCDSprite = null,
 blimpState: BlimpDynamics = undefined,
 haze: *Haze = undefined,
 camera: Camera = undefined,
@@ -65,6 +66,9 @@ pub fn init(levelNumber: u8) !*MainScreen {
     const leftBlow = try self.arena.newSprite(false);
     self.leftBlow = leftBlow;
     p.setZIndex(leftBlow, .blow);
+    const rightBlow = try self.arena.newSprite(false);
+    self.rightBlow = rightBlow;
+    p.setZIndex(rightBlow, .blow);
     self.updateBlowImages();
 
     self.haze = try Haze.init(self.arena);
@@ -114,7 +118,6 @@ pub fn update(self: *MainScreen) Outcome {
     const blimp = self.blimp.?;
     self.blimpState.update();
     self.score.update();
-    self.updateBlowImages();
 
     var outcome = Outcome.none;
 
@@ -168,9 +171,16 @@ pub fn update(self: *MainScreen) Outcome {
     }
     self.camera.update(self.blimpState.x, self.blimpState.y);
 
+    self.updateBlowImages();
+    const blowXOffset = 20;
+    const blowYOffset = 9;
     if (self.leftBlow) |leftBlow| {
-        p.playdate.sprite.moveTo(leftBlow, self.blimpState.x - 20, self.blimpState.y + 9);
+        p.playdate.sprite.moveTo(leftBlow, self.blimpState.x - blowXOffset, self.blimpState.y + blowYOffset);
         p.playdate.sprite.setVisible(leftBlow, @intFromBool(self.blimpState.leftThrusterOn));
+    }
+    if (self.rightBlow) |rightBlow| {
+        p.playdate.sprite.moveTo(rightBlow, self.blimpState.x + blowXOffset, self.blimpState.y + blowYOffset);
+        p.playdate.sprite.setVisible(rightBlow, @intFromBool(self.blimpState.rightThrusterOn));
     }
 
     self.ballastGauge.setFraction(self.blimpState.fraction());
@@ -222,6 +232,9 @@ fn updateBlowImages(self: *MainScreen) void {
     const img = p.playdate.graphics.getTableBitmap(images.blowTable, @intCast(phase)) orelse return;
     if (self.leftBlow) |leftBlow| {
         p.playdate.sprite.setImage(leftBlow, img, .BitmapUnflipped);
+    }
+    if (self.rightBlow) |rightBlow| {
+        p.playdate.sprite.setImage(rightBlow, img, .BitmapFlippedX);
     }
 }
 
