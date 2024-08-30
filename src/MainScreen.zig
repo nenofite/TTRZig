@@ -457,7 +457,7 @@ const BlimpDynamics = struct {
     const maxBallast = 2 * neutralBallast;
     const maxXAccel = 2.0 / @as(comptime_float, @floatFromInt(tween.framerate));
     const maxYAccel = 2.0 / @as(comptime_float, @floatFromInt(tween.framerate));
-    const ticks = 4;
+    const ticks = 10;
     const tickSoundSpacing = @divExact(maxBallast, ticks);
     const crankDegsPerNeutral = 180;
 
@@ -470,7 +470,7 @@ const BlimpDynamics = struct {
     leftThrusterOn: bool = false,
     rightThrusterOn: bool = false,
 
-    ballastCrank: i32 = 0,
+    sinceLastTick: i32 = 0,
 
     pub fn update(self: *BlimpDynamics) void {
         self.t +%= 1;
@@ -481,18 +481,17 @@ const BlimpDynamics = struct {
 
         const crankChange = p.playdate.system.getCrankChange();
         const ballastChange: i32 = @intFromFloat(crankChange / crankDegsPerNeutral * neutralBallast);
-        self.ballastCrank +|= ballastChange;
-        while (self.ballastCrank >= tickSoundSpacing) {
-            self.ballastCrank -|= tickSoundSpacing;
-            self.ballast +|= tickSoundSpacing;
+        self.sinceLastTick +|= ballastChange;
+        while (self.sinceLastTick >= tickSoundSpacing) {
+            self.sinceLastTick -|= tickSoundSpacing;
             sounds.playOnce(sounds.click3);
         }
-        while (self.ballastCrank <= -tickSoundSpacing) {
-            self.ballastCrank +|= tickSoundSpacing;
-            self.ballast -|= tickSoundSpacing;
+        while (self.sinceLastTick <= -tickSoundSpacing) {
+            self.sinceLastTick +|= tickSoundSpacing;
             sounds.playOnce(sounds.click3);
         }
 
+        self.ballast +|= ballastChange;
         self.ballast = std.math.clamp(self.ballast, 0, maxBallast);
 
         self.leftThrusterOn = false;
