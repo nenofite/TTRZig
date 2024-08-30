@@ -1,7 +1,6 @@
 const std = @import("std");
 const p = @import("global_playdate.zig");
 const tween = @import("tween.zig");
-const tags = @import("tags.zig");
 
 const SpriteArena = @This();
 
@@ -92,7 +91,6 @@ pub fn newSprite(self: *SpriteArena, ignoreDrawOffset: bool) !*p.LCDSprite {
     try self.sprites.append(sprite);
 
     p.playdate.sprite.setIgnoresDrawOffset(sprite, @intFromBool(ignoreDrawOffset));
-    p.playdate.sprite.setTag(sprite, tags.none);
     p.playdate.sprite.addSprite(sprite);
     return sprite;
 }
