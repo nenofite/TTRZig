@@ -491,8 +491,7 @@ const BlimpDynamics = struct {
             sounds.playOnce(sounds.click3);
         }
 
-        self.ballast +|= ballastChange;
-        self.ballast = std.math.clamp(self.ballast, 0, maxBallast);
+        self.ballast = std.math.clamp(self.ballast +| ballastChange, 0, maxBallast);
 
         self.leftThrusterOn = false;
         self.rightThrusterOn = false;
