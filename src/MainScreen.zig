@@ -124,34 +124,54 @@ pub fn update(self: *MainScreen) Outcome {
     var outcome = Outcome.none;
 
     const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
+
+    // var len: c_int = 0;
+    // const collisions = p.playdate.sprite.moveWithCollisions(
+    //     blimp,
+    //     self.blimpState.x,
+    //     self.blimpState.y,
+    //     &self.blimpState.x,
+    //     &self.blimpState.y,
+    //     &len,
+    // );
     if (collisionsOpt) |collisions| {
         // defer p.allocator.free(collisions);
         defer _ = p.playdate.system.realloc(collisions.ptr, 0);
 
+        p.log("Collisions {}", .{collisions.len});
+
         var coinsToFree = std.ArrayList(*Coin).init(self.arena.alloc);
         defer coinsToFree.deinit();
 
-        for (collisions) |collision| {
-            const otherTag = p.playdate.sprite.getTag(collision.other.?);
+        for (collisions, 0..) |collision, i| {
+            p.log("Coll #{}: {any}", .{ i, collision });
+        }
+
+        // _ = &outcome;
+        for (collisions, 0..) |collision, i| {
+            // const collision = &collisions[i];
+            p.log("exec #{}", .{i});
+            p.log("before get other", .{});
+            const other = collision.other orelse continue;
+            p.log("before get tag", .{});
+            const otherTag = p.playdate.sprite.getTag(other);
+            p.log("before switch", .{});
             switch (otherTag) {
                 tags.coin => {
-                    p.log("Got a coin!", .{});
-                    if (self.findCoinOfSprite(collision.other.?)) |coin| {
+                    if (self.findCoinOfSprite(other)) |coin| {
                         self.onHitCoin(coin);
                         coinsToFree.append(coin) catch unreachable;
                     }
                 },
                 tags.goal => {
-                    p.log("Goal!", .{});
                     outcome = .won;
                 },
-                tags.spike => {
-                    p.log("Ouch!", .{});
-                    self.score.score = 0;
+                // tags.spike => {
+                //     self.score.score = 0;
 
-                    self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
-                    self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
-                },
+                //     self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
+                //     self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
+                // },
                 else => {
                     // Wall
                     var newVelX = self.blimpState.velX;
@@ -165,6 +185,10 @@ pub fn update(self: *MainScreen) Outcome {
                     self.blimpState.velY = newVelY;
                 },
             }
+        }
+
+        if (coinsToFree.items.len > 0) {
+            p.log("Freeing {} coins", .{coinsToFree.items.len});
         }
 
         for (coinsToFree.items) |coin| {
