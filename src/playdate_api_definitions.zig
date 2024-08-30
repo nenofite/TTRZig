@@ -972,6 +972,7 @@ pub const SpriteCollisionResponseType = enum(c_int) {
     CollisionTypeFreeze,
     CollisionTypeOverlap,
     CollisionTypeBounce,
+    _,
 };
 pub const PDRect = extern struct {
     x: f32,

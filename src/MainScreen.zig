@@ -514,12 +514,14 @@ const BlimpDynamics = struct {
     }
 };
 
-fn blimpCollisionResponse(self: ?*p.LCDSprite, other: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
+fn blimpCollisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
     _ = self;
-    const otherTag = p.playdate.sprite.getTag(other.?);
+
+    const other = otherOpt orelse return .CollisionTypeSlide;
+    const otherTag = p.playdate.sprite.getTag(other);
     switch (otherTag) {
         tags.coin, tags.goal => return .CollisionTypeOverlap,
-        tags.spike => return .CollisionTypeFreeze,
+        tags.spike => return .CollisionTypeBounce,
         else => return .CollisionTypeSlide,
     }
 }
