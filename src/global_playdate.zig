@@ -185,6 +185,7 @@ pub const Z = enum(i16) {
     tiles = 0,
     arrows,
     coins,
+    blow,
     blimp,
 
     haze,

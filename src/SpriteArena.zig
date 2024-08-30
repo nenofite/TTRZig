@@ -91,6 +91,7 @@ pub fn newSprite(self: *SpriteArena, ignoreDrawOffset: bool) !*p.LCDSprite {
     try self.sprites.append(sprite);
 
     p.playdate.sprite.setIgnoresDrawOffset(sprite, @intFromBool(ignoreDrawOffset));
+    p.playdate.sprite.addSprite(sprite);
     return sprite;
 }
 

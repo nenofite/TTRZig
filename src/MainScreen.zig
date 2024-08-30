@@ -23,6 +23,7 @@ const MainScreen = @This();
 arena: *SpriteArena,
 levelNumber: u8,
 blimp: ?*p.LCDSprite = null,
+leftBlow: ?*p.LCDSprite = null,
 blimpState: BlimpDynamics = undefined,
 haze: *Haze = undefined,
 camera: Camera = undefined,
@@ -60,6 +61,11 @@ pub fn init(levelNumber: u8) !*MainScreen {
     const blimp = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(blimp);
     self.blimp = blimp;
+
+    const leftBlow = try self.arena.newSprite(false);
+    self.leftBlow = leftBlow;
+    p.setZIndex(leftBlow, .blow);
+    self.updateBlowImages();
 
     self.haze = try Haze.init(self.arena);
     errdefer self.haze.deinit();
@@ -108,6 +114,7 @@ pub fn update(self: *MainScreen) Outcome {
     const blimp = self.blimp.?;
     self.blimpState.update();
     self.score.update();
+    self.updateBlowImages();
 
     var outcome = Outcome.none;
 
@@ -161,6 +168,11 @@ pub fn update(self: *MainScreen) Outcome {
     }
     self.camera.update(self.blimpState.x, self.blimpState.y);
 
+    if (self.leftBlow) |leftBlow| {
+        p.playdate.sprite.moveTo(leftBlow, self.blimpState.x - 20, self.blimpState.y + 9);
+        p.playdate.sprite.setVisible(leftBlow, @intFromBool(self.blimpState.leftThrusterOn));
+    }
+
     self.ballastGauge.setFraction(self.blimpState.fraction());
     self.ballastGauge.update();
 
@@ -201,6 +213,16 @@ fn deinitAllEntities(self: *MainScreen) void {
         arrow.deinit();
     }
     self.arrows.clearAndFree();
+}
+
+fn updateBlowImages(self: *MainScreen) void {
+    const mspf = 1000 / 10;
+    const phases = 3;
+    const phase = (p.playdate.system.getCurrentTimeMilliseconds() / mspf) % phases;
+    const img = p.playdate.graphics.getTableBitmap(images.blowTable, @intCast(phase)) orelse return;
+    if (self.leftBlow) |leftBlow| {
+        p.playdate.sprite.setImage(leftBlow, img, .BitmapUnflipped);
+    }
 }
 
 fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
@@ -423,6 +445,8 @@ const BlimpDynamics = struct {
     velY: f32 = 0,
     ballast: i32 = neutralBallast,
     t: u32 = 0,
+    leftThrusterOn: bool = false,
+    rightThrusterOn: bool = false,
 
     ballastCrank: i32 = 0,
 
@@ -449,11 +473,15 @@ const BlimpDynamics = struct {
 
         self.ballast = std.math.clamp(self.ballast, 0, maxBallast);
 
+        self.leftThrusterOn = false;
+        self.rightThrusterOn = false;
         const btns = p.getButtonState();
         if (btns.current.left) {
             self.velX += -maxXAccel;
+            self.rightThrusterOn = true;
         } else if (btns.current.right) {
             self.velX += maxXAccel;
+            self.leftThrusterOn = true;
         }
 
         const diff = neutralBallast - self.ballast;
