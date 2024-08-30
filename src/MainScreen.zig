@@ -119,6 +119,8 @@ pub fn update(self: *MainScreen) Outcome {
     self.blimpState.update();
     self.score.update();
 
+    sounds.thruster.setPlaying(self.blimpState.leftThrusterOn or self.blimpState.rightThrusterOn);
+
     var outcome = Outcome.none;
 
     const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);

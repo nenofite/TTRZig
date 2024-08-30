@@ -5,6 +5,7 @@ pub var click3: *p.SamplePlayer = undefined;
 pub var coin: *p.SamplePlayer = undefined;
 pub var loseCoin: *p.SamplePlayer = undefined;
 pub var score: *p.SamplePlayer = undefined;
+pub var thruster: ContinuousSound = undefined;
 
 fn make(path: [*c]const u8) !*p.SamplePlayer {
     const sample = p.playdate.sound.sample.load(path) orelse {
@@ -34,6 +35,7 @@ pub fn init() void {
     coin = metaMake("coin", 0.7);
     loseCoin = metaMake("lose_coin", 0.3);
     score = metaMake("score", 0.3);
+    thruster = .{ .player = metaMake("thruster", 0.3) };
 }
 
 pub fn playOnce(sound: *p.SamplePlayer) void {
@@ -44,3 +46,20 @@ pub fn playOnceVaried(sound: *p.SamplePlayer, maxVary: f32) void {
     const vary = (p.random.float(f32) * 2 - 1) * maxVary;
     _ = p.playdate.sound.sampleplayer.play(sound, 1, 1.0 + vary);
 }
+
+const ContinuousSound = struct {
+    player: *p.SamplePlayer,
+    started: bool = false,
+
+    pub fn setPlaying(self: *ContinuousSound, play: bool) void {
+        const isPlaying = p.playdate.sound.sampleplayer.isPlaying(self.player) != 0;
+        if (isPlaying != play) {
+            if (play and !self.started) {
+                _ = p.playdate.sound.sampleplayer.play(self.player, 0, 1.0);
+                self.started = true;
+            } else {
+                p.playdate.sound.sampleplayer.setPaused(self.player, @intFromBool(!play));
+            }
+        }
+    }
+};
