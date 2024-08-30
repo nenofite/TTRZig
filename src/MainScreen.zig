@@ -125,8 +125,12 @@ pub fn update(self: *MainScreen) Outcome {
 
     const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
     if (collisionsOpt) |collisions| {
-        // defer p.allocator.free(collisions);
         defer _ = p.playdate.system.realloc(collisions.ptr, 0);
+
+        // p.log("Colls: {}", .{collisions.len});
+        // for (collisions, 0..) |collision, i| {
+        //     p.log("Coll #{}: {any}", .{ i, collision });
+        // }
 
         var coinsToFree = std.ArrayList(*Coin).init(self.arena.alloc);
         defer coinsToFree.deinit();
@@ -165,6 +169,9 @@ pub fn update(self: *MainScreen) Outcome {
                     self.blimpState.velY = newVelY;
                 },
             }
+            // SpriteCollisionInfo is incorrectly sized on Playdate hardware, so
+            // accessing past the first element is memory-unsafe
+            break;
         }
 
         for (coinsToFree.items) |coin| {
