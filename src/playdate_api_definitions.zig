@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const onPlaydate = builtin.os.tag == .freestanding;
+
 pub const PlaydateAPI = extern struct {
     system: *const PlaydateSys,
     file: *const PlaydateFile,
@@ -967,7 +969,7 @@ pub const PlaydateSoundEffectOverdrive = extern struct {
 };
 
 //////Sprite/////
-pub const SpriteCollisionResponseType = enum(c_int) {
+pub const SpriteCollisionResponseType = enum(if (onPlaydate) u8 else c_int) {
     CollisionTypeSlide,
     CollisionTypeFreeze,
     CollisionTypeOverlap,
