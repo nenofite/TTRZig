@@ -118,7 +118,7 @@ fn logHex(items: anytype) void {
     var output = std.ArrayList(u8).init(p.allocator);
     defer output.deinit();
     const writer = output.writer();
-    printHexFields(items, writer) catch unreachable;
+    printHexSlice(items, writer) catch unreachable;
     p.log("Hex: {s}", .{output.items});
 }
 
@@ -128,13 +128,27 @@ fn printHex(bytes: []const u8, writer: anytype) !void {
     }
 }
 
-fn printHexFields(items: anytype, writer: anytype) !void {
-    for (items, 0..) |item, i| {
-        inline for (@typeInfo(@TypeOf(item)).Struct.fields) |field| {
-            try writer.print("[{}].{s}: ", .{ i, field.name });
-            const bytes: []const u8 = std.mem.asBytes(&@field(item, field.name));
-            try printHex(bytes, writer);
+fn printHexFields(item: anytype, writer: anytype) !void {
+    inline for (@typeInfo(@TypeOf(item)).Struct.fields) |field| {
+        try writer.print(".{s}{{ ", .{field.name});
+        switch (@typeInfo(field.type)) {
+            .Struct => {
+                try printHexFields(@field(item, field.name), writer);
+            },
+            else => {
+                const bytes: []const u8 = std.mem.asBytes(&@field(item, field.name));
+                try printHex(bytes, writer);
+            },
         }
+        try writer.print("}} ", .{});
+    }
+}
+
+fn printHexSlice(items: anytype, writer: anytype) !void {
+    for (items, 0..) |item, i| {
+        try writer.print("[{}]{{ ", .{i});
+        try printHexFields(item, writer);
+        try writer.print("}} ", .{});
     }
 }
 
