@@ -114,6 +114,27 @@ pub fn init(levelNumber: u8) !*MainScreen {
     return self;
 }
 
+fn logHex(items: anytype) void {
+    const bytes: []const u8 = std.mem.sliceAsBytes(items);
+    var output = std.ArrayList(u8).init(p.allocator);
+    defer output.deinit();
+    const writer = output.writer();
+    var bytesInLine: i32 = 0;
+    for (bytes, 0..) |byte, i| {
+        if (bytesInLine == 0) writer.print("{d:0>3}:", .{i}) catch unreachable;
+        writer.print(" {x:0>2}", .{byte}) catch unreachable;
+        bytesInLine += 1;
+        if (bytesInLine == 8) {
+            p.log("{s}", .{output.items});
+            output.clearRetainingCapacity();
+            bytesInLine = 0;
+        }
+    }
+    if (bytesInLine > 0) {
+        p.log("{s}", .{output.items});
+    }
+}
+
 pub fn update(self: *MainScreen) Outcome {
     const blimp = self.blimp.?;
     self.blimpState.update();
@@ -126,6 +147,8 @@ pub fn update(self: *MainScreen) Outcome {
     const collisionsOpt = p.moveWithCollisions(blimp, &self.blimpState.x, &self.blimpState.y);
     if (collisionsOpt) |collisions| {
         defer _ = p.playdate.system.realloc(collisions.ptr, 0);
+
+        logHex(collisions);
 
         // p.log("Colls: {}", .{collisions.len});
         // for (collisions, 0..) |collision, i| {
@@ -153,8 +176,8 @@ pub fn update(self: *MainScreen) Outcome {
                     p.log("Ouch!", .{});
                     self.score.score = 0;
 
-                    self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
-                    self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
+                    // self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
+                    // self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
                 },
                 else => {
                     // Wall
