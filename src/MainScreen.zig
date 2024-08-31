@@ -165,7 +165,7 @@ pub fn update(self: *MainScreen) Outcome {
     if (collisionsOpt) |collisions| {
         defer _ = p.playdate.system.realloc(collisions.ptr, 0);
 
-        logHex(collisions);
+        // logHex(collisions);
 
         // p.log("Colls: {}", .{collisions.len});
         // for (collisions, 0..) |collision, i| {
@@ -193,8 +193,8 @@ pub fn update(self: *MainScreen) Outcome {
                     p.log("Ouch!", .{});
                     self.score.score = 0;
 
-                    // self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
-                    // self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
+                    self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
+                    self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
                 },
                 else => {
                     // Wall
@@ -209,9 +209,6 @@ pub fn update(self: *MainScreen) Outcome {
                     self.blimpState.velY = newVelY;
                 },
             }
-            // SpriteCollisionInfo is incorrectly sized on Playdate hardware, so
-            // accessing past the first element is memory-unsafe
-            break;
         }
 
         for (coinsToFree.items) |coin| {
