@@ -4,6 +4,7 @@ const p = @import("global_playdate.zig");
 pub var spritesTable: *p.LCDBitmapTable = undefined;
 pub var dungeonTable: *p.LCDBitmapTable = undefined;
 pub var blowTable: *p.LCDBitmapTable = undefined;
+pub var cannonTable: *p.LCDBitmapTable = undefined;
 pub var digits: *p.LCDBitmap = undefined;
 pub var geo: *p.LCDFont = undefined;
 pub var mans: *p.LCDFont = undefined;
@@ -12,6 +13,7 @@ pub fn init() void {
     spritesTable = loadTableOrPanic("images/sprites");
     dungeonTable = loadTableOrPanic("images/dungeon-inv");
     blowTable = loadTableOrPanic("images/blow");
+    cannonTable = loadTableOrPanic("images/cannon");
     digits = loadBitmapOrPanic("images/digits");
 
     geo = loadFont("fonts/geo");

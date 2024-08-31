@@ -184,10 +184,12 @@ pub fn setZIndex(sprite: *pdapi.LCDSprite, z: Z) void {
 
 pub const Z = enum(i16) {
     tiles = 0,
+    enemies,
     arrows,
     coins,
     blow,
     blimp,
+    projectiles,
 
     haze,
 

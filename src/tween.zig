@@ -4,6 +4,7 @@ const p = @import("global_playdate.zig");
 const maxDiscreteSize = @sizeOf(*void);
 
 pub const framerate = 50;
+pub const framerateF: comptime_float = @floatFromInt(framerate);
 const frameMsec = @divTrunc(1000, framerate);
 
 pub const Target = union(enum) {

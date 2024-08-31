@@ -17,6 +17,7 @@ const Coin = @import("Coin.zig");
 const Score = @import("Score.zig");
 const LevelParser = @import("LevelParser.zig");
 const WinScreen = @import("WinScreen.zig");
+const CrossbowBolt = @import("CrossbowBolt.zig");
 
 const MainScreen = @This();
 
@@ -31,6 +32,7 @@ camera: Camera = undefined,
 ballastGauge: *Gauge = undefined,
 coins: std.ArrayList(*Coin),
 arrows: std.ArrayList(*Arrow),
+bolts: std.ArrayList(*CrossbowBolt),
 score: *Score = undefined,
 
 const TILE_SIZE = 8;
@@ -51,6 +53,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
         .arena = arena,
         .coins = std.ArrayList(*Coin).init(arena.alloc),
         .arrows = std.ArrayList(*Arrow).init(arena.alloc),
+        .bolts = std.ArrayList(*CrossbowBolt).init(arena.alloc),
         .levelNumber = levelNumber,
     };
     errdefer self.deinitAllEntities();
@@ -217,6 +220,11 @@ pub fn update(self: *MainScreen) Outcome {
     }
     self.camera.update(self.blimpState.x, self.blimpState.y);
 
+    if (p.getButtonState().pushed.a) {
+        const bolt = CrossbowBolt.init(self.arena, self.blimpState.x, self.blimpState.y) catch unreachable;
+        self.bolts.append(bolt) catch unreachable;
+    }
+
     self.updateBlowImages();
     const blowXOffset = 20;
     const blowYOffset = 9;
@@ -238,6 +246,10 @@ pub fn update(self: *MainScreen) Outcome {
 
     for (self.arrows.items) |arrow| {
         arrow.update();
+    }
+
+    for (self.bolts.items) |bolt| {
+        bolt.update();
     }
 
     const offset = self.camera.setGraphicsOffset();
@@ -269,6 +281,11 @@ fn deinitAllEntities(self: *MainScreen) void {
         arrow.deinit();
     }
     self.arrows.clearAndFree();
+
+    for (self.bolts.items) |bolt| {
+        bolt.deinit();
+    }
+    self.bolts.clearAndFree();
 }
 
 fn updateBlowImages(self: *MainScreen) void {
