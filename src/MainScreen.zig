@@ -115,23 +115,26 @@ pub fn init(levelNumber: u8) !*MainScreen {
 }
 
 fn logHex(items: anytype) void {
-    const bytes: []const u8 = std.mem.sliceAsBytes(items);
     var output = std.ArrayList(u8).init(p.allocator);
     defer output.deinit();
     const writer = output.writer();
-    var bytesInLine: i32 = 0;
-    for (bytes, 0..) |byte, i| {
-        if (bytesInLine == 0) writer.print("{d:0>3}:", .{i}) catch unreachable;
-        writer.print(" {x:0>2}", .{byte}) catch unreachable;
-        bytesInLine += 1;
-        if (bytesInLine == 8) {
-            p.log("{s}", .{output.items});
-            output.clearRetainingCapacity();
-            bytesInLine = 0;
-        }
+    printHexFields(items, writer) catch unreachable;
+    p.log("Hex: {s}", .{output.items});
+}
+
+fn printHex(bytes: []const u8, writer: anytype) !void {
+    for (bytes) |byte| {
+        try writer.print("{x:0>2} ", .{byte});
     }
-    if (bytesInLine > 0) {
-        p.log("{s}", .{output.items});
+}
+
+fn printHexFields(items: anytype, writer: anytype) !void {
+    for (items, 0..) |item, i| {
+        inline for (@typeInfo(@TypeOf(item)).Struct.fields) |field| {
+            try writer.print("[{}].{s}: ", .{ i, field.name });
+            const bytes: []const u8 = std.mem.asBytes(&@field(item, field.name));
+            try printHex(bytes, writer);
+        }
     }
 }
 
