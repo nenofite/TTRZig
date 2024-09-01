@@ -202,6 +202,24 @@ pub const Z = enum(i16) {
     winScore,
 };
 
+pub fn setTag(sprite: *pdapi.LCDSprite, tag: Tag) void {
+    playdate.sprite.setTag(sprite, @intFromEnum(tag));
+}
+
+pub fn getTag(sprite: *pdapi.LCDSprite) Tag {
+    const rawTag = playdate.sprite.getTag(sprite);
+    return @enumFromInt(rawTag);
+}
+
+pub const Tag = enum(u8) {
+    none = 0,
+    coin,
+    goal,
+    spike,
+    enemy,
+    projectile,
+};
+
 const alloc_impl = struct {
     fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
         _ = ctx;

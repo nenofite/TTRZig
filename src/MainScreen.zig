@@ -6,7 +6,6 @@ const pat = @import("pattern.zig");
 const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
-const tags = @import("tags.zig");
 
 const SpriteArena = @import("SpriteArena.zig");
 const Arrow = @import("Arrow.zig");
@@ -182,20 +181,20 @@ pub fn update(self: *MainScreen) Outcome {
         defer coinsToFree.deinit();
 
         for (collisions) |collision| {
-            const otherTag = p.playdate.sprite.getTag(collision.other.?);
+            const otherTag = p.getTag(collision.other.?);
             switch (otherTag) {
-                tags.coin => {
+                .coin => {
                     p.log("Got a coin!", .{});
                     if (self.findCoinOfSprite(collision.other.?)) |coin| {
                         self.onHitCoin(coin);
                         coinsToFree.append(coin) catch unreachable;
                     }
                 },
-                tags.goal => {
+                .goal => {
                     p.log("Goal!", .{});
                     outcome = .won;
                 },
-                tags.spike => {
+                .spike => {
                     p.log("Ouch!", .{});
                     self.score.score = 0;
 
@@ -503,7 +502,7 @@ fn addSpikeCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
     };
     p.playdate.sprite.setCollideRect(sprite, originRect);
     p.playdate.sprite.moveTo(sprite, x, y);
-    p.playdate.sprite.setTag(sprite, tags.spike);
+    p.setTag(sprite, .spike);
     p.playdate.sprite.addSprite(sprite);
     return sprite;
 }
@@ -521,7 +520,7 @@ fn addGoalSprite(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
     };
     p.playdate.sprite.setCollideRect(sprite, originRect);
     p.playdate.sprite.moveTo(sprite, x, y);
-    p.playdate.sprite.setTag(sprite, tags.goal);
+    p.setTag(sprite, .goal);
     p.playdate.sprite.addSprite(sprite);
     return sprite;
 }
@@ -622,10 +621,10 @@ fn blimpCollisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv
     _ = self;
 
     const other = otherOpt orelse return .CollisionTypeSlide;
-    const otherTag = p.playdate.sprite.getTag(other);
+    const otherTag = p.getTag(other);
     switch (otherTag) {
-        tags.coin, tags.goal => return .CollisionTypeOverlap,
-        tags.spike => return .CollisionTypeBounce,
+        .coin, .goal => return .CollisionTypeOverlap,
+        .spike => return .CollisionTypeBounce,
         else => return .CollisionTypeSlide,
     }
 }

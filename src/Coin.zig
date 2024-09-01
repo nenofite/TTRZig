@@ -3,7 +3,6 @@ const p = @import("global_playdate.zig");
 const tween = @import("tween.zig");
 const pat = @import("pattern.zig");
 const images = @import("images.zig");
-const tags = @import("tags.zig");
 
 const SpriteArena = @import("SpriteArena.zig");
 
@@ -22,7 +21,7 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Coin {
     const sprite = try arena.newSprite(false);
     errdefer arena.freeSprite(sprite);
 
-    p.playdate.sprite.setTag(sprite, tags.coin);
+    p.setTag(sprite, .coin);
     p.playdate.sprite.setCollideRect(sprite, .{ .x = 0, .y = 0, .width = 8, .height = 8 });
 
     self.* = .{

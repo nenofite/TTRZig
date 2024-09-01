@@ -4,7 +4,6 @@ const tween = @import("tween.zig");
 const pat = @import("pattern.zig");
 const images = @import("images.zig");
 const sounds = @import("sounds.zig");
-const tags = @import("tags.zig");
 
 const SpriteArena = @import("SpriteArena.zig");
 const CrossbowBolt = @import("CrossbowBolt.zig");
@@ -29,18 +28,18 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Crossbow {
     const sprite = try parent.newSprite(false);
     errdefer parent.freeSprite(sprite);
 
+    self.* = .{
+        .parent = parent,
+        .sprite = sprite,
+    };
+
     // p.playdate.sprite.setCenter(sprite, 1, 0);
     const img = p.playdate.graphics.getTableBitmap(images.cannonTable, 4) orelse unreachable;
     p.playdate.sprite.moveTo(sprite, x, y);
     p.setZIndex(sprite, .enemies);
     p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
     p.playdate.sprite.setUserdata(sprite, @ptrCast(self));
-    p.playdate.sprite.setTag(sprite, tags.projectile);
-
-    self.* = .{
-        .parent = parent,
-        .sprite = sprite,
-    };
+    p.setTag(sprite, .enemy);
 
     return self;
 }

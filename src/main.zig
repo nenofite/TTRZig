@@ -6,7 +6,6 @@ const pat = @import("pattern.zig");
 const icons = @import("icons.zig");
 const sounds = @import("sounds.zig");
 const images = @import("images.zig");
-const tags = @import("tags.zig");
 
 const Arrow = @import("Arrow.zig");
 const Haze = @import("Haze.zig");

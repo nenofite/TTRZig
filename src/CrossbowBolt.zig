@@ -4,7 +4,6 @@ const tween = @import("tween.zig");
 const pat = @import("pattern.zig");
 const images = @import("images.zig");
 const sounds = @import("sounds.zig");
-const tags = @import("tags.zig");
 
 const SpriteArena = @import("SpriteArena.zig");
 
@@ -31,7 +30,7 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*CrossbowBolt {
     p.playdate.sprite.moveTo(sprite, x, y);
     p.setZIndex(sprite, .projectiles);
     p.playdate.sprite.setUserdata(sprite, @ptrCast(self));
-    p.playdate.sprite.setTag(sprite, tags.projectile);
+    p.setTag(sprite, .projectile);
     p.playdate.sprite.setCollisionResponseFunction(sprite, collisionResponse);
     p.playdate.sprite.setCollideRect(sprite, .{ .x = 7, .y = 3, .width = 2, .height = 10 });
 
@@ -69,9 +68,9 @@ pub fn update(self: *CrossbowBolt) void {
 fn collisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {
     _ = self;
     const other = otherOpt orelse return .CollisionTypeSlide;
-    const otherTag = p.playdate.sprite.getTag(other);
+    const otherTag = p.getTag(other);
     switch (otherTag) {
-        tags.enemy => return .CollisionTypeOverlap,
+        .enemy => return .CollisionTypeOverlap,
         else => return .CollisionTypeSlide,
     }
 }
