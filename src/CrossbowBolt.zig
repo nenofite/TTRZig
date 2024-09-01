@@ -12,6 +12,11 @@ const CrossbowBolt = @This();
 parent: *SpriteArena,
 sprite: *p.LCDSprite,
 
+const Outcome = enum {
+    none,
+    remove,
+};
+
 pub fn init(parent: *SpriteArena, x: f32, y: f32) !*CrossbowBolt {
     const self = try parent.alloc.create(CrossbowBolt);
     errdefer parent.alloc.destroy(self);
@@ -50,7 +55,7 @@ fn updateImage(self: *CrossbowBolt) void {
     p.playdate.sprite.setImage(self.sprite, img, .BitmapUnflipped);
 }
 
-pub fn update(self: *CrossbowBolt) void {
+pub fn update(self: *CrossbowBolt) Outcome {
     const speed = 50.0 / tween.framerateF;
 
     self.updateImage();
@@ -62,7 +67,17 @@ pub fn update(self: *CrossbowBolt) void {
     const collisionsOpt = p.moveWithCollisions(self.sprite, &x, &y);
     if (collisionsOpt) |collisions| {
         defer _ = p.playdate.system.realloc(collisions.ptr, 0);
+
+        for (collisions) |collision| {
+            const other = collision.other orelse continue;
+            const otherTag = p.getTag(other);
+            if (otherTag == .wall) {
+                return .remove;
+            }
+        }
     }
+
+    return .none;
 }
 
 fn collisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv(.C) p.SpriteCollisionResponseType {

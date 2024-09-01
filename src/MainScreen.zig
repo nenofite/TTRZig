@@ -266,8 +266,22 @@ pub fn update(self: *MainScreen) Outcome {
         }
     }
 
-    for (self.bolts.items) |bolt| {
-        bolt.update();
+    {
+        var boltsToRemove = std.ArrayList(usize).init(p.allocator);
+        defer boltsToRemove.deinit();
+        for (self.bolts.items, 0..) |bolt, i| {
+            switch (bolt.update()) {
+                .none => {},
+                .remove => {
+                    boltsToRemove.append(i) catch unreachable;
+                },
+            }
+        }
+        std.mem.reverse(usize, boltsToRemove.items);
+        for (boltsToRemove.items) |i| {
+            const bolt = self.bolts.swapRemove(i);
+            bolt.deinit();
+        }
     }
 
     const offset = self.camera.setGraphicsOffset();
