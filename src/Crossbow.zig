@@ -52,6 +52,7 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*Crossbow {
 pub fn deinit(self: *Crossbow) void {
     const parent = self.parent;
     parent.freeSprite(self.sprite);
+    self.tweens.deinit();
     parent.alloc.destroy(self);
 }
 
