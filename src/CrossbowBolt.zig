@@ -20,19 +20,20 @@ pub fn init(parent: *SpriteArena, x: f32, y: f32) !*CrossbowBolt {
     const sprite = try parent.newSprite(false);
     errdefer parent.freeSprite(sprite);
 
-    // p.playdate.sprite.setCenter(sprite, 1, 0);
-    p.playdate.sprite.moveTo(sprite, x, y);
-    p.setZIndex(sprite, .projectiles);
-    p.playdate.sprite.addSprite(sprite);
-    p.playdate.sprite.setUserdata(sprite, @ptrCast(self));
-    p.playdate.sprite.setTag(sprite, tags.projectile);
-    p.playdate.sprite.setCollisionResponseFunction(sprite, collisionResponse);
-    p.playdate.sprite.setCollideRect(sprite, .{ .x = 7, .y = 3, .width = 2, .height = 10 });
-
     self.* = .{
         .parent = parent,
         .sprite = sprite,
     };
+
+    self.updateImage();
+
+    // p.playdate.sprite.setCenter(sprite, 1, 0);
+    p.playdate.sprite.moveTo(sprite, x, y);
+    p.setZIndex(sprite, .projectiles);
+    p.playdate.sprite.setUserdata(sprite, @ptrCast(self));
+    p.playdate.sprite.setTag(sprite, tags.projectile);
+    p.playdate.sprite.setCollisionResponseFunction(sprite, collisionResponse);
+    p.playdate.sprite.setCollideRect(sprite, .{ .x = 7, .y = 3, .width = 2, .height = 10 });
 
     return self;
 }
@@ -43,12 +44,17 @@ pub fn deinit(self: *CrossbowBolt) void {
     parent.alloc.destroy(self);
 }
 
-pub fn update(self: *CrossbowBolt) void {
-    const speed = 50.0 / tween.framerateF;
+fn updateImage(self: *CrossbowBolt) void {
     const phase = 7 + p.playdate.system.getCurrentTimeMilliseconds() / 100 % 2;
     std.debug.assert(7 <= phase and phase <= 8);
     const img = p.playdate.graphics.getTableBitmap(images.cannonTable, @intCast(phase)).?;
     p.playdate.sprite.setImage(self.sprite, img, .BitmapUnflipped);
+}
+
+pub fn update(self: *CrossbowBolt) void {
+    const speed = 50.0 / tween.framerateF;
+
+    self.updateImage();
 
     var x: f32 = 0;
     var y: f32 = 0;

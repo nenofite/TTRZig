@@ -18,6 +18,7 @@ const Score = @import("Score.zig");
 const LevelParser = @import("LevelParser.zig");
 const WinScreen = @import("WinScreen.zig");
 const CrossbowBolt = @import("CrossbowBolt.zig");
+const Crossbow = @import("Crossbow.zig");
 
 const MainScreen = @This();
 
@@ -33,6 +34,7 @@ ballastGauge: *Gauge = undefined,
 coins: std.ArrayList(*Coin),
 arrows: std.ArrayList(*Arrow),
 bolts: std.ArrayList(*CrossbowBolt),
+crossbows: std.ArrayList(*Crossbow),
 score: *Score = undefined,
 
 const TILE_SIZE = 8;
@@ -54,6 +56,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
         .coins = std.ArrayList(*Coin).init(arena.alloc),
         .arrows = std.ArrayList(*Arrow).init(arena.alloc),
         .bolts = std.ArrayList(*CrossbowBolt).init(arena.alloc),
+        .crossbows = std.ArrayList(*Crossbow).init(arena.alloc),
         .levelNumber = levelNumber,
     };
     errdefer self.deinitAllEntities();
@@ -248,6 +251,18 @@ pub fn update(self: *MainScreen) Outcome {
         arrow.update();
     }
 
+    for (self.crossbows.items) |crossbow| {
+        switch (crossbow.update()) {
+            .none => {},
+            .shoot => {
+                var x: f32 = 0;
+                var y: f32 = 0;
+                p.playdate.sprite.getPosition(crossbow.sprite, &x, &y);
+                self.addCrossbowBolt(x, y) catch unreachable;
+            },
+        }
+    }
+
     for (self.bolts.items) |bolt| {
         bolt.update();
     }
@@ -286,6 +301,11 @@ fn deinitAllEntities(self: *MainScreen) void {
         bolt.deinit();
     }
     self.bolts.clearAndFree();
+
+    for (self.crossbows.items) |crossbow| {
+        crossbow.deinit();
+    }
+    self.crossbows.clearAndFree();
 }
 
 fn updateBlowImages(self: *MainScreen) void {
@@ -315,7 +335,10 @@ fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
     var parser = LevelParser.init(rawFile);
     defer parser.deinit();
 
-    const spawnSection = parser.section('S', struct { x: i32, y: i32 }) orelse return error.LoadLevel;
+    const Coord = struct { x: i32, y: i32 };
+    const Rect = struct { x: i32, y: i32, width: i32, height: i32 };
+
+    const spawnSection = parser.section('S', Coord) orelse return error.LoadLevel;
     const spawn = spawnSection.next() orelse return error.LoadLevel;
 
     spawnCoords.* = .{ spawn.x, spawn.y };
@@ -329,19 +352,19 @@ fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
     }
 
     // Coins
-    const coinSection = parser.section('C', struct { x: i32, y: i32 }) orelse return error.LoadLevel;
+    const coinSection = parser.section('C', Coord) orelse return error.LoadLevel;
     while (coinSection.next()) |coin| {
         _ = try self.addCoin(coin.x, coin.y);
     }
 
     // Arrows
-    const arrowSection = parser.section('A', struct { x: i32, y: i32 }) orelse return error.LoadLevel;
+    const arrowSection = parser.section('A', Coord) orelse return error.LoadLevel;
     while (arrowSection.next()) |arrow| {
         _ = try self.addArrow(arrow.x, arrow.y);
     }
 
     // Goals
-    const goalSection = parser.section('G', struct { x: i32, y: i32, width: i32, height: i32 }) orelse return error.LoadLevel;
+    const goalSection = parser.section('G', Rect) orelse return error.LoadLevel;
     while (goalSection.next()) |goal| {
         _ = try self.addGoalSprite(.{
             .x = @floatFromInt(goal.x),
@@ -349,6 +372,12 @@ fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
             .width = @floatFromInt(goal.width),
             .height = @floatFromInt(goal.height),
         });
+    }
+
+    // Crossbows
+    const crossbowSection = parser.section('B', Coord) orelse return error.LoadLevel;
+    while (crossbowSection.next()) |crossbow| {
+        _ = try self.addCrossbow(@floatFromInt(crossbow.x), @floatFromInt(crossbow.y));
     }
 
     const levelImg = p.playdate.graphics.newBitmap(dims.width, dims.height, @intFromEnum(p.LCDSolidColor.ColorBlack)) orelse @panic("Can't make level bitmap");
@@ -416,6 +445,22 @@ fn addCoin(self: *MainScreen, x: i32, y: i32) !*Coin {
     errdefer _ = self.coins.pop();
 
     return coin;
+}
+
+fn addCrossbow(self: *MainScreen, x: f32, y: f32) !void {
+    const crossbow = try Crossbow.init(self.arena, x, y);
+    errdefer crossbow.deinit();
+
+    try self.crossbows.append(crossbow);
+    errdefer _ = self.crossbows.pop();
+}
+
+fn addCrossbowBolt(self: *MainScreen, x: f32, y: f32) !void {
+    const bolt = try CrossbowBolt.init(self.arena, x, y);
+    errdefer bolt.deinit();
+
+    try self.bolts.append(bolt);
+    errdefer _ = self.bolts.pop();
 }
 
 fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {

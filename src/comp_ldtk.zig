@@ -85,6 +85,13 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8, path: []const 
             try resultWriter.print("{} {} {} {}\n", .{ goal.x, goal.y, goal.width, goal.height });
         }
 
+        const crossbows = try extractEntityPositions(alloc, "Crossbow", level);
+        defer alloc.free(crossbows);
+        try resultWriter.print("B\n", .{});
+        for (crossbows) |crossbow| {
+            try resultWriter.print("{} {}\n", .{ crossbow[0], crossbow[1] });
+        }
+
         const wallIds = extractTileIDs(&root.root, "Wall");
         const skipIds = extractTileIDs(&root.root, "Skip");
         const spikeIds = extractTileIDs(&root.root, "Spike");
