@@ -70,7 +70,7 @@ fn collisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv(.C) 
     const other = otherOpt orelse return .CollisionTypeSlide;
     const otherTag = p.getTag(other);
     switch (otherTag) {
-        .enemy => return .CollisionTypeOverlap,
-        else => return .CollisionTypeSlide,
+        .wall => return .CollisionTypeFreeze,
+        else => return .CollisionTypeOverlap,
     }
 }

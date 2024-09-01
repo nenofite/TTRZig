@@ -213,6 +213,7 @@ pub fn getTag(sprite: *pdapi.LCDSprite) Tag {
 
 pub const Tag = enum(u8) {
     none = 0,
+    wall,
     coin,
     goal,
     spike,

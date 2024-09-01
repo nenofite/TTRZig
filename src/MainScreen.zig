@@ -183,6 +183,10 @@ pub fn update(self: *MainScreen) Outcome {
         for (collisions) |collision| {
             const otherTag = p.getTag(collision.other.?);
             switch (otherTag) {
+                .none => {},
+                .projectile => {
+                    // TODO
+                },
                 .coin => {
                     p.log("Got a coin!", .{});
                     if (self.findCoinOfSprite(collision.other.?)) |coin| {
@@ -201,7 +205,7 @@ pub fn update(self: *MainScreen) Outcome {
                     self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
                     self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
                 },
-                else => {
+                .wall, .enemy => {
                     // Wall
                     var newVelX = self.blimpState.velX;
                     var newVelY = self.blimpState.velY;
@@ -485,6 +489,7 @@ fn addWallCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
     };
     p.playdate.sprite.setCollideRect(sprite, originRect);
     p.playdate.sprite.moveTo(sprite, x, y);
+    p.setTag(sprite, .wall);
     p.playdate.sprite.addSprite(sprite);
     return sprite;
 }
@@ -623,9 +628,9 @@ fn blimpCollisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv
     const other = otherOpt orelse return .CollisionTypeSlide;
     const otherTag = p.getTag(other);
     switch (otherTag) {
-        .coin, .goal => return .CollisionTypeOverlap,
-        .spike => return .CollisionTypeBounce,
-        else => return .CollisionTypeSlide,
+        .wall => return .CollisionTypeSlide,
+        .spike, .enemy => return .CollisionTypeBounce,
+        .none, .coin, .goal, .projectile => return .CollisionTypeOverlap,
     }
 }
 
