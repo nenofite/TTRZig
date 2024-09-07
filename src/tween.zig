@@ -271,6 +271,7 @@ pub const List = struct {
                 },
             }
             b.into.add(t_) catch {
+                p.log("Fast forwarding tween builder", .{});
                 b.fast_forwarding = true;
                 b.into.finishClear();
                 t_.fast_forward();

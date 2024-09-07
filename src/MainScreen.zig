@@ -35,6 +35,7 @@ arrows: std.ArrayList(*Arrow),
 bolts: std.ArrayList(*CrossbowBolt),
 crossbows: std.ArrayList(*Crossbow),
 score: *Score = undefined,
+invertBlimp: bool = false,
 
 const TILE_SIZE = 8;
 
@@ -162,6 +163,7 @@ pub fn update(self: *MainScreen) Outcome {
     const blimp = self.blimp.?;
     self.blimpState.update();
     self.score.update();
+    _ = self.arena.tweens.update();
 
     sounds.thruster.setPlaying(self.blimpState.leftThrusterOn or self.blimpState.rightThrusterOn);
 
@@ -557,6 +559,26 @@ fn takeDamage(self: *MainScreen, collisionOpt: ?p.SpriteCollisionInfo) void {
         self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
         self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
     }
+
+    if (!self.arena.tweens.isActive()) {
+        var b = self.arena.tweens.build();
+        for (0..3) |_| {
+            b.of_callback(toggleDrawMode, self, 0);
+            b.wait(100);
+            b.of_callback(toggleDrawMode, self, 0);
+            b.wait(100);
+        }
+    }
+}
+
+fn toggleDrawMode(self: *MainScreen) void {
+    const blimp = self.blimp orelse return;
+    if (self.invertBlimp) {
+        _ = p.playdate.sprite.setDrawMode(blimp, .DrawModeCopy);
+    } else {
+        _ = p.playdate.sprite.setDrawMode(blimp, .DrawModeInverted);
+    }
+    self.invertBlimp = !self.invertBlimp;
 }
 
 fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
