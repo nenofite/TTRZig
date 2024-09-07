@@ -67,6 +67,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
     const blimp = try self.arena.newSprite(false);
     errdefer self.arena.freeSprite(blimp);
     self.blimp = blimp;
+    p.setTag(blimp, .blimp);
 
     const leftBlow = try self.arena.newSprite(false);
     self.leftBlow = leftBlow;
@@ -183,9 +184,9 @@ pub fn update(self: *MainScreen) Outcome {
         for (collisions) |collision| {
             const otherTag = p.getTag(collision.other.?);
             switch (otherTag) {
-                .none => {},
+                .none, .blimp => {},
                 .projectile => {
-                    // TODO
+                    // Handled by the projectile's update
                 },
                 .coin => {
                     p.log("Got a coin!", .{});
@@ -199,11 +200,7 @@ pub fn update(self: *MainScreen) Outcome {
                     outcome = .won;
                 },
                 .spike => {
-                    p.log("Ouch!", .{});
-                    self.score.score = 0;
-
-                    self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
-                    self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
+                    self.takeDamage(collision);
                 },
                 .wall, .enemy => {
                     // Wall
@@ -272,6 +269,10 @@ pub fn update(self: *MainScreen) Outcome {
         for (self.bolts.items, 0..) |bolt, i| {
             switch (bolt.update()) {
                 .none => {},
+                .hurtAndRemove => {
+                    self.takeDamage(null);
+                    boltsToRemove.append(i) catch unreachable;
+                },
                 .remove => {
                     boltsToRemove.append(i) catch unreachable;
                 },
@@ -550,6 +551,14 @@ fn onHitCoin(self: *MainScreen, coin: *Coin) void {
     self.score.score +|= 5;
 }
 
+fn takeDamage(self: *MainScreen, collisionOpt: ?p.SpriteCollisionInfo) void {
+    self.score.score = 0;
+    if (collisionOpt) |collision| {
+        self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
+        self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;
+    }
+}
+
 fn findCoinOfSprite(self: *const MainScreen, sprite: *p.LCDSprite) ?*Coin {
     for (self.coins.items) |coin| {
         if (coin.sprite == sprite) {
@@ -644,7 +653,7 @@ fn blimpCollisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv
     switch (otherTag) {
         .wall => return .CollisionTypeSlide,
         .spike, .enemy => return .CollisionTypeBounce,
-        .none, .coin, .goal, .projectile => return .CollisionTypeOverlap,
+        .none, .coin, .goal, .projectile, .blimp => return .CollisionTypeOverlap,
     }
 }
 

@@ -14,6 +14,7 @@ sprite: *p.LCDSprite,
 
 const Outcome = enum {
     none,
+    hurtAndRemove,
     remove,
 };
 
@@ -71,8 +72,12 @@ pub fn update(self: *CrossbowBolt) Outcome {
         for (collisions) |collision| {
             const other = collision.other orelse continue;
             const otherTag = p.getTag(other);
-            if (otherTag == .wall) {
-                return .remove;
+            switch (otherTag) {
+                .wall => return .remove,
+                .blimp => {
+                    return .hurtAndRemove;
+                },
+                .coin, .enemy, .goal, .none, .projectile, .spike => {},
             }
         }
     }
