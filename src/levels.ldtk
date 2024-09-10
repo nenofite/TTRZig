@@ -11,7 +11,7 @@
 	"iid": "136ba3f0-fec0-11ee-86cd-29ec422bdbc8",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473703,
-	"nextUid": 294,
+	"nextUid": 295,
 	"identifierStyle": "Capitalize",
 	"toc": [],
 	"worldLayout": "LinearHorizontal",
@@ -1273,6 +1273,41 @@
 			"pivotX": 0.5,
 			"pivotY": 0.5,
 			"fieldDefs": []
+		},
+		{
+			"identifier": "Chest",
+			"uid": 294,
+			"tags": [],
+			"exportToToc": false,
+			"allowOutOfBounds": false,
+			"doc": null,
+			"width": 8,
+			"height": 8,
+			"resizableX": false,
+			"resizableY": false,
+			"minWidth": null,
+			"maxWidth": null,
+			"minHeight": null,
+			"maxHeight": null,
+			"keepAspectRatio": false,
+			"tileOpacity": 1,
+			"fillOpacity": 0.08,
+			"lineOpacity": 0,
+			"hollow": false,
+			"color": "#733E39",
+			"renderMode": "Tile",
+			"showName": true,
+			"tilesetId": 203,
+			"tileRenderMode": "FitInside",
+			"tileRect": { "tilesetUid": 203, "x": 0, "y": 48, "w": 16, "h": 16 },
+			"uiTileRect": null,
+			"nineSliceBorders": [],
+			"maxCount": 0,
+			"limitScope": "PerLevel",
+			"limitBehavior": "MoveLastOne",
+			"pivotX": 0,
+			"pivotY": 0,
+			"fieldDefs": []
 		}
 	], "tilesets": [
 		{
@@ -1346,13 +1381,13 @@
 		},
 		{
 			"__cWid": 3,
-			"__cHei": 3,
+			"__cHei": 4,
 			"identifier": "Cannon",
 			"uid": 203,
 			"relPath": "../assets/images/cannon-table-16-16.png",
 			"embedAtlas": null,
 			"pxWid": 48,
-			"pxHei": 48,
+			"pxHei": 64,
 			"tileGridSize": 16,
 			"spacing": 0,
 			"padding": 0,
@@ -1361,7 +1396,7 @@
 			"enumTags": [],
 			"customData": [],
 			"savedSelections": [],
-			"cachedPixelData": { "opaqueTiles": "000000000", "averageColors": "455546661bbb5ddd69998aaa58883bbb7ccc" }
+			"cachedPixelData": { "opaqueTiles": "000000000000", "averageColors": "455546661bbb5ddd69998aaa58883bbb7cccaaaaaaaab999" }
 		}
 	], "enums": [{ "identifier": "TileType", "uid": 66, "values": [
 		{ "id": "Wall", "tileRect": null, "color": 12470831 },
@@ -1792,6 +1827,34 @@
 							"height": 8,
 							"defUid": 204,
 							"px": [194,330],
+							"fieldInstances": []
+						},
+						{
+							"__identifier": "Chest",
+							"__grid": [45,84],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": { "tilesetUid": 203, "x": 0, "y": 48, "w": 16, "h": 16 },
+							"__smartColor": "#733E39",
+							"iid": "22adfe40-4ce0-11ef-a5f5-0759687bec96",
+							"width": 8,
+							"height": 8,
+							"defUid": 294,
+							"px": [180,336],
+							"fieldInstances": []
+						},
+						{
+							"__identifier": "Chest",
+							"__grid": [11,60],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": { "tilesetUid": 203, "x": 0, "y": 48, "w": 16, "h": 16 },
+							"__smartColor": "#733E39",
+							"iid": "2923e4b0-4ce0-11ef-a5f5-63150b0eb3df",
+							"width": 8,
+							"height": 8,
+							"defUid": 294,
+							"px": [44,240],
 							"fieldInstances": []
 						}
 					]
