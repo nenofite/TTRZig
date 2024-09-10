@@ -66,6 +66,7 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8, path: []const 
 
         try writeEntities(alloc, "Coin", level, 'C', resultWriter);
         try writeEntities(alloc, "Arrow", level, 'A', resultWriter);
+        try writeEntities(alloc, "Chest", level, 'H', resultWriter);
 
         const goals = try extractEntityRects(alloc, "Goal", level);
         defer alloc.free(goals);

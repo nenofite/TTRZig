@@ -383,6 +383,12 @@ fn loadLevel(self: *MainScreen, num: u8, spawnCoords: *[2]i32) !*p.LCDSprite {
         _ = try self.addArrow(arrow.x, arrow.y);
     }
 
+    // Chests
+    const chestSection = parser.section('H', Coord) orelse return error.LoadLevel;
+    while (chestSection.next()) |chest| {
+        _ = try self.addChest(chest.x, chest.y);
+    }
+
     // Goals
     const goalSection = parser.section('G', Rect) orelse return error.LoadLevel;
     while (goalSection.next()) |goal| {
@@ -491,6 +497,17 @@ fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {
     errdefer _ = self.arrows.pop();
 
     return arrow;
+}
+
+fn addChest(self: *MainScreen, x: i32, y: i32) !void {
+    const sprite = try self.arena.newSprite(false);
+    errdefer self.arena.freeSprite(sprite);
+
+    const img = p.playdate.graphics.getTableBitmap(images.cannonTable, 9).?;
+    p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
+    p.playdate.sprite.setCenter(sprite, 0, 0);
+    p.playdate.sprite.moveTo(sprite, @floatFromInt(x), @floatFromInt(y));
+    p.setZIndex(sprite, .treasures);
 }
 
 fn addWallCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
