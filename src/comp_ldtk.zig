@@ -64,19 +64,8 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8, path: []const 
 
         try resultWriter.print("X {} {}\n", .{ level.pxWid, level.pxHei });
 
-        const coins = try extractEntityPositions(alloc, "Coin", level);
-        defer alloc.free(coins);
-        try resultWriter.print("C\n", .{});
-        for (coins) |coin| {
-            try resultWriter.print("{} {}\n", .{ coin[0], coin[1] });
-        }
-
-        const arrows = try extractEntityPositions(alloc, "Arrow", level);
-        defer alloc.free(arrows);
-        try resultWriter.print("A\n", .{});
-        for (arrows) |arrow| {
-            try resultWriter.print("{} {}\n", .{ arrow[0], arrow[1] });
-        }
+        try writeEntities(alloc, "Coin", level, 'C', resultWriter);
+        try writeEntities(alloc, "Arrow", level, 'A', resultWriter);
 
         const goals = try extractEntityRects(alloc, "Goal", level);
         defer alloc.free(goals);
@@ -85,12 +74,7 @@ fn loadLevel(parentAlloc: std.mem.Allocator, rawFile: []const u8, path: []const 
             try resultWriter.print("{} {} {} {}\n", .{ goal.x, goal.y, goal.width, goal.height });
         }
 
-        const crossbows = try extractEntityPositions(alloc, "Crossbow", level);
-        defer alloc.free(crossbows);
-        try resultWriter.print("B\n", .{});
-        for (crossbows) |crossbow| {
-            try resultWriter.print("{} {}\n", .{ crossbow[0], crossbow[1] });
-        }
+        try writeEntities(alloc, "Crossbow", level, 'B', resultWriter);
 
         const wallIds = extractTileIDs(&root.root, "Wall");
         const skipIds = extractTileIDs(&root.root, "Skip");
@@ -140,6 +124,16 @@ fn extractEntityPositions(alloc: std.mem.Allocator, name: []const u8, level: *co
         }
     }
     return try result.toOwnedSlice();
+}
+
+fn writeEntities(alloc: std.mem.Allocator, jsonName: []const u8, level: *const ldtk.Level, section: u8, writer: anytype) !void {
+    const entities = try extractEntityPositions(alloc, jsonName, level);
+    defer alloc.free(entities);
+
+    try writer.print("{c}\n", .{section});
+    for (entities) |entity| {
+        try writer.print("{} {}\n", .{ entity[0], entity[1] });
+    }
 }
 
 const Rect = struct {
