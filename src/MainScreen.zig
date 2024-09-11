@@ -18,6 +18,7 @@ const LevelParser = @import("LevelParser.zig");
 const WinScreen = @import("WinScreen.zig");
 const CrossbowBolt = @import("CrossbowBolt.zig");
 const Crossbow = @import("Crossbow.zig");
+const Chest = @import("Chest.zig");
 
 const MainScreen = @This();
 
@@ -34,6 +35,7 @@ coins: std.ArrayList(*Coin),
 arrows: std.ArrayList(*Arrow),
 bolts: std.ArrayList(*CrossbowBolt),
 crossbows: std.ArrayList(*Crossbow),
+chests: std.ArrayList(*Chest),
 score: *Score = undefined,
 invertBlimp: bool = false,
 
@@ -57,6 +59,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
         .arrows = std.ArrayList(*Arrow).init(arena.alloc),
         .bolts = std.ArrayList(*CrossbowBolt).init(arena.alloc),
         .crossbows = std.ArrayList(*Crossbow).init(arena.alloc),
+        .chests = std.ArrayList(*Chest).init(arena.alloc),
         .levelNumber = levelNumber,
     };
     errdefer self.deinitAllEntities();
@@ -104,9 +107,9 @@ pub fn init(levelNumber: u8) !*MainScreen {
     p.playdate.sprite.setImage(blimp, image, .BitmapUnflipped);
     p.playdate.sprite.setCollideRect(blimp, .{
         .x = 7,
-        .y = 8,
-        .width = 19,
-        .height = 18,
+        .y = 2,
+        .width = 18,
+        .height = 28,
     });
     p.setZIndex(blimp, .blimp);
     p.playdate.sprite.moveTo(blimp, spawnX, spawnY);
@@ -215,6 +218,17 @@ pub fn update(self: *MainScreen) Outcome {
                     // if (collision.normal.y < 0 and newVelY > 0) newVelY *= -1;
                     self.blimpState.velX = newVelX;
                     self.blimpState.velY = newVelY;
+                },
+                .chest => {
+                    const otherPtr = p.playdate.sprite.getUserdata(collision.other) orelse continue;
+                    const chest: *Chest = @ptrCast(@alignCast(otherPtr));
+                    const openOutcome = chest.open();
+                    switch (openOutcome) {
+                        .alreadyOpened => {},
+                        .treasure => {
+                            // TODO
+                        },
+                    }
                 },
             }
         }
@@ -500,14 +514,11 @@ fn addArrow(self: *MainScreen, x: i32, y: i32) !*Arrow {
 }
 
 fn addChest(self: *MainScreen, x: i32, y: i32) !void {
-    const sprite = try self.arena.newSprite(false);
-    errdefer self.arena.freeSprite(sprite);
+    const chest = try Chest.init(self.arena, @floatFromInt(x), @floatFromInt(y));
+    errdefer chest.deinit();
 
-    const img = p.playdate.graphics.getTableBitmap(images.cannonTable, 9).?;
-    p.playdate.sprite.setImage(sprite, img, .BitmapUnflipped);
-    p.playdate.sprite.setCenter(sprite, 0, 0);
-    p.playdate.sprite.moveTo(sprite, @floatFromInt(x), @floatFromInt(y));
-    p.setZIndex(sprite, .treasures);
+    try self.chests.append(chest);
+    errdefer _ = self.chests.pop();
 }
 
 fn addWallCollider(self: *MainScreen, rect: p.PDRect) !*p.LCDSprite {
@@ -692,7 +703,7 @@ fn blimpCollisionResponse(self: ?*p.LCDSprite, otherOpt: ?*p.LCDSprite) callconv
     switch (otherTag) {
         .wall => return .CollisionTypeSlide,
         .spike, .enemy => return .CollisionTypeBounce,
-        .none, .coin, .goal, .projectile, .blimp => return .CollisionTypeOverlap,
+        .none, .coin, .goal, .projectile, .blimp, .chest => return .CollisionTypeOverlap,
     }
 }
 

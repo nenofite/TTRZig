@@ -1453,7 +1453,7 @@
 					"entityInstances": [
 						{
 							"__identifier": "Spawn",
-							"__grid": [11,35],
+							"__grid": [11,37],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
 							"__tile": { "tilesetUid": 92, "x": 0, "y": 0, "w": 32, "h": 32 },
@@ -1462,7 +1462,7 @@
 							"width": 32,
 							"height": 32,
 							"defUid": 68,
-							"px": [44,140],
+							"px": [44,148],
 							"fieldInstances": []
 						},
 						{

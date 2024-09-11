@@ -221,6 +221,7 @@ pub const Tag = enum(u8) {
     spike,
     enemy,
     projectile,
+    chest,
 };
 
 const alloc_impl = struct {

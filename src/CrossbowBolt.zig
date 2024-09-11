@@ -73,7 +73,7 @@ pub fn update(self: *CrossbowBolt) Outcome {
             const other = collision.other orelse continue;
             const otherTag = p.getTag(other);
             switch (otherTag) {
-                .wall => return .remove,
+                .wall, .chest => return .remove,
                 .blimp => {
                     return .hurtAndRemove;
                 },
