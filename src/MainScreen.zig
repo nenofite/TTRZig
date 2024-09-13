@@ -307,6 +307,8 @@ pub fn update(self: *MainScreen) Outcome {
         }
     }
 
+    self.health.update();
+
     const offset = self.camera.setGraphicsOffset();
     self.haze.update(.{
         @as(i32, @intFromFloat(self.blimpState.x)) + offset[0],
@@ -589,6 +591,8 @@ fn onHitCoin(self: *MainScreen, coin: *Coin) void {
 
 fn takeDamage(self: *MainScreen, collisionOpt: ?p.SpriteCollisionInfo) void {
     self.score.score = 0;
+    self.health.health -|= 1;
+
     if (collisionOpt) |collision| {
         self.blimpState.velX += @as(f32, @floatFromInt(collision.normal.x)) * 3;
         self.blimpState.velY += @as(f32, @floatFromInt(collision.normal.y)) * 3;

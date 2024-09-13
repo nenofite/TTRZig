@@ -56,5 +56,17 @@ pub fn deinit(self: *HealthBar) void {
 }
 
 pub fn update(self: *HealthBar) void {
-    _ = self;
+    if (self.prevHealth != self.health) {
+        self.prevHealth = self.health;
+
+        const onImg = p.playdate.graphics.getTableBitmap(images.heartsTable, 0).?;
+        const offImg = p.playdate.graphics.getTableBitmap(images.heartsTable, 1).?;
+        for (0..self.sprites.len) |i| {
+            const revI = self.sprites.len - i - 1;
+            const heart = self.sprites[revI];
+            const on = revI + 1 <= self.health;
+            const img = if (on) onImg else offImg;
+            p.playdate.sprite.setImage(heart, img, .BitmapUnflipped);
+        }
+    }
 }
