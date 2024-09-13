@@ -19,6 +19,7 @@ const WinScreen = @import("WinScreen.zig");
 const CrossbowBolt = @import("CrossbowBolt.zig");
 const Crossbow = @import("Crossbow.zig");
 const Chest = @import("Chest.zig");
+const HealthBar = @import("HealthBar.zig");
 
 const MainScreen = @This();
 
@@ -38,6 +39,7 @@ crossbows: std.ArrayList(*Crossbow),
 chests: std.ArrayList(*Chest),
 score: *Score = undefined,
 invertBlimp: bool = false,
+health: *HealthBar,
 
 const TILE_SIZE = 8;
 
@@ -61,6 +63,7 @@ pub fn init(levelNumber: u8) !*MainScreen {
         .crossbows = std.ArrayList(*Crossbow).init(arena.alloc),
         .chests = std.ArrayList(*Chest).init(arena.alloc),
         .levelNumber = levelNumber,
+        .health = undefined,
     };
     errdefer self.deinitAllEntities();
 
@@ -86,6 +89,9 @@ pub fn init(levelNumber: u8) !*MainScreen {
 
     self.score = try Score.init(arena, .score);
     errdefer self.score.deinit();
+
+    self.health = try HealthBar.init(arena);
+    errdefer self.health.deinit();
 
     self.ballastGauge = try Gauge.init(self.arena, .{
         .cx = 387,

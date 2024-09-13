@@ -5,6 +5,7 @@ pub var spritesTable: *p.LCDBitmapTable = undefined;
 pub var dungeonTable: *p.LCDBitmapTable = undefined;
 pub var blowTable: *p.LCDBitmapTable = undefined;
 pub var cannonTable: *p.LCDBitmapTable = undefined;
+pub var heartsTable: *p.LCDBitmapTable = undefined;
 pub var digits: *p.LCDBitmap = undefined;
 pub var geo: *p.LCDFont = undefined;
 pub var mans: *p.LCDFont = undefined;
@@ -14,6 +15,7 @@ pub fn init() void {
     dungeonTable = loadTableOrPanic("images/dungeon-inv");
     blowTable = loadTableOrPanic("images/blow");
     cannonTable = loadTableOrPanic("images/cannon");
+    heartsTable = loadTableOrPanic("images/hearts");
     digits = loadBitmapOrPanic("images/digits");
 
     geo = loadFont("fonts/geo");
