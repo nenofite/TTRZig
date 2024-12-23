@@ -27,7 +27,7 @@ pub fn build(b: *std.Build) !void {
         .name = "pdex",
         .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
-        .target = b.host,
+        .target = b.graph.host,
     });
 
     // TODO does this need to be separate?
@@ -35,7 +35,7 @@ pub fn build(b: *std.Build) !void {
         .name = "pdex",
         .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
-        .target = b.host,
+        .target = b.graph.host,
     });
     const check = b.step("check", "Check if it compiles");
     check.dependOn(&lib_for_check.step);
@@ -51,7 +51,7 @@ pub fn build(b: *std.Build) !void {
         _ = writer.addCopyFile(lib.getEmittedPdb(), "pdex.pdb");
     }
 
-    const playdate_target = b.resolveTargetQuery(try std.zig.CrossTarget.parse(.{
+    const playdate_target = b.resolveTargetQuery(try std.Target.Query.parse(.{
         .arch_os_abi = "thumb-freestanding-eabihf",
         .cpu_features = "cortex_m7+vfp4d16sp",
     }));
@@ -107,9 +107,9 @@ pub fn build(b: *std.Build) !void {
 
     const clean_step = b.step("clean", "Clean all artifacts");
     clean_step.dependOn(b.getUninstallStep());
-    clean_step.dependOn(&b.addRemoveDirTree("zig-cache").step);
-    clean_step.dependOn(&b.addRemoveDirTree(".zig-cache").step);
-    clean_step.dependOn(&b.addRemoveDirTree("zig-out").step);
+    clean_step.dependOn(&b.addRemoveDirTree(b.path("zig-cache")).step);
+    clean_step.dependOn(&b.addRemoveDirTree(b.path(".zig-cache")).step);
+    clean_step.dependOn(&b.addRemoveDirTree(b.path("zig-out")).step);
 }
 
 pub fn addCopyDirectory(

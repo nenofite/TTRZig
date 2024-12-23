@@ -38,7 +38,7 @@ fn Section(comptime Line: type) type {
             _ = self.parent.maybe('\n');
             tryParse: {
                 var result: Line = undefined;
-                inline for (@typeInfo(Line).Struct.fields, 0..) |field, i| {
+                inline for (@typeInfo(Line).@"struct".fields, 0..) |field, i| {
                     if (i > 0) {
                         if (!self.parent.maybe(' ')) break :tryParse;
                     }
